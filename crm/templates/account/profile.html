@@ -1,0 +1,173 @@
+{% extends "partials/base.html" %} {% load static %} {% block title %}{{ user.get_full_name }}'s Profile - Channab{% endblock title %} {% block extra_css %}
+<style>
+  .profile-header {
+    background-color: #405189;
+    color: white;
+    padding: 20px 0;
+    margin-bottom: 20px;
+  }
+  .profile-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 5px solid white;
+  }
+  .profile-tabs {
+    background-color: #f8f9fa;
+    padding: 15px 0;
+    margin-bottom: 20px;
+  }
+  .profile-content {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  .nav-pills .nav-link.active {
+    background-color: #405189;
+    color: #ffffff;
+  }
+  .header {
+    color: #ffffff;
+  }
+  .nav-pills .nav-link {
+    color: #405189;
+  }
+  .skill-badge {
+    background-color: #e0e0e0;
+    color: #333;
+    padding: 5px 10px;
+    margin: 2px;
+    border-radius: 15px;
+    display: inline-block;
+  }
+</style>
+{% endblock extra_css %} {% block content %}
+<div class="main-content">
+  <div class="page-content">
+    <div class="container-fluid">
+      <!-- Profile header -->
+      <div class="profile-header">
+        <div class="container">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <img src="{% static 'images/samnan/samnan-tech.PNG' %}" alt="Profile Image" class="profile-img" />
+            </div>
+            <div class="col">
+              <h2 class="header">{{ user.get_full_name }}</h2>
+              <p>{{ user.get_user_type_display }}</p>
+              <p><i class="ri-map-pin-line"></i> {{ user.service_areas.first.city.name }}</p>
+              <p><i class="ri-building-line"></i> {{ user.company.name|default:"N/A" }}</p>
+            </div>
+            <div class="col-auto">
+              <a href="#" class="btn btn-light">Edit Profile</a>
+              {% if user.is_technician %}
+              <a href="{% url 'appointment_list' %}" class="btn btn-primary">View Appointments</a>
+              {% else %}
+              <a href="#" class="btn btn-primary">Book Appointment</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs and content -->
+      <div class="row">
+        <div class="col-12">
+          <div class="profile-tabs">
+            <ul class="nav nav-pills nav-justified" id="profileTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="overview-tab" data-bs-toggle="tab" href="#overview" role="tab" aria-controls="overview" aria-selected="true">Overview</a>
+              </li>
+              <li class="nav-item" role="presentation">
+                <a class="nav-link" id="activities-tab" data-bs-toggle="tab" href="#activities" role="tab" aria-controls="activities" aria-selected="false">Activities</a>
+              </li>
+              <li class="nav-item" role="presentation">
+                <a class="nav-link" id="appointments-tab" data-bs-toggle="tab" href="#appointments" role="tab" aria-controls="appointments" aria-selected="false">Appointments</a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="tab-content profile-content" id="profileTabsContent">
+            <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+              <h3>Overview</h3>
+              <div class="row">
+                <div class="col-md-6">
+                  <h4>About</h4>
+                  <p>{{ user.bio|default:"No bio available." }}</p>
+                </div>
+                <div class="col-md-6">
+                  <h4>Info</h4>
+                  <ul class="list-unstyled">
+                    <li><strong>Name:</strong> {{ user.get_full_name }}</li>
+                    <li><strong>Mobile:</strong> {{ user.mobile }}</li>
+                    <li><strong>E-mail:</strong> {{ user.email|default:"N/A" }}</li>
+                    <li><strong>Role:</strong> {{ user.get_user_type_display }}</li>
+                    <li><strong>City:</strong> {{ user.service_areas.first.city.name|default:"N/A" }}</li>
+                    <li>
+                      <strong>Working Areas:</strong>
+                      {% for area in user.service_areas.all %} {{ area.name }}{% if not forloop.last %}, {% endif %} {% empty %} N/A {% endfor %}
+                    </li>
+                    {% if user.is_technician %}
+                    <li><strong>Working Times:</strong> {{ user.working_times|default:"N/A" }}</li>
+                    {% endif %}
+                    <li><strong>Joined:</strong> {{ user.date_joined|date:"d M Y" }}</li>
+                  </ul>
+                </div>
+              </div>
+              {% if user.is_technician %}
+              <h4>Skills</h4>
+              <div>
+                {% for skill in user.skills.all %}
+                <span class="skill-badge">{{ skill.name }}</span>
+                {% empty %}
+                <p>No skills listed.</p>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="tab-pane fade" id="activities" role="tabpanel" aria-labelledby="activities-tab">
+              <h3>Activities</h3>
+              <!-- Add your activities content here -->
+              <p>This is where you can display recent activities or a timeline of events.</p>
+            </div>
+            <div class="tab-pane fade" id="appointments" role="tabpanel" aria-labelledby="appointments-tab">
+              <h3>Appointments</h3>
+              {% if user.is_technician %}
+              <h4>Upcoming Appointments</h4>
+              <ul>
+                {% for appointment in user.appointments_as_technician.all %}
+                <li>{{ appointment.appointment_date|date:"d M Y" }} at {{ appointment.appointment_time|time:"H:i" }} - {{ appointment.customer.get_full_name }}</li>
+                {% empty %}
+                <li>No upcoming appointments.</li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <h4>Your Appointments</h4>
+              <ul>
+                {% for appointment in user.appointments_as_customer.all %}
+                <li>{{ appointment.appointment_date|date:"d M Y" }} at {{ appointment.appointment_time|time:"H:i" }} - {{ appointment.service.name }} with {{ appointment.technician.get_full_name }}</li>
+                {% empty %}
+                <li>No appointments scheduled.</li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% block footer %} {% include "partials/footer.html" %} {% endblock footer %}
+</div>
+{% endblock content %} {% block extra_js %}
+<script>
+  $(document).ready(function () {
+    $("#profileTabs a").on("click", function (e) {
+      e.preventDefault();
+      $(this).tab("show");
+    });
+  });
+</script>
+{% endblock extra_js %}

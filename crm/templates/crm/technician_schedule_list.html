@@ -1,0 +1,35 @@
+<!-- crm/templates/crm/technician_schedule_list.html -->
+
+{% extends 'base.html' %} {% block content %}
+<h2>Technician Schedules</h2>
+<a href="{% url 'technician_schedule_create' %}" class="btn btn-primary mb-3">Assign Schedule to Technician</a>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Technician</th>
+      <th>Schedule</th>
+      <th>Start Date</th>
+      <th>End Date</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for tech_schedule in technician_schedules %}
+    <tr>
+      <td>{{ tech_schedule.technician.name }}</td>
+      <td>{{ tech_schedule.schedule.name }}</td>
+      <td>{{ tech_schedule.start_date }}</td>
+      <td>{{ tech_schedule.end_date|default:"Ongoing" }}</td>
+      <td>
+        <a href="{% url 'technician_schedule_edit' tech_schedule.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+        <a href="{% url 'technician_schedule_delete' tech_schedule.pk %}" class="btn btn-sm btn-danger">Delete</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="5">No technician schedules found.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

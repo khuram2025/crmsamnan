@@ -1,0 +1,11 @@
+<!-- crm/templates/crm/technician_confirm_delete.html -->
+
+{% extends 'base.html' %} {% block content %}
+<h2>Delete Technician</h2>
+<p>Are you sure you want to delete the technician "{{ technician.name }}"?</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-danger">Confirm Delete</button>
+  <a href="{% url 'technician_list' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

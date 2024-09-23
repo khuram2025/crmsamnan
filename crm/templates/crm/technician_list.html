@@ -1,0 +1,39 @@
+<!-- crm/templates/crm/technician_list.html -->
+
+{% extends 'base.html' %} {% block content %}
+<h2>Technicians</h2>
+<a href="{% url 'technician_add' %}" class="btn btn-primary mb-3">Add New Technician</a>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>ID</th>
+      <th>Mobile Number</th>
+      <th>City</th>
+      <th>Working Area</th>
+      <th>Shift</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for technician in technicians %}
+    <tr>
+      <td>{{ technician.name }}</td>
+      <td>{{ technician.technician_id }}</td>
+      <td>{{ technician.mobile_number }}</td>
+      <td>{{ technician.city }}</td>
+      <td>{{ technician.working_area }}</td>
+      <td>{{ technician.get_working_shift_display }}</td>
+      <td>
+        <a href="{% url 'technician_edit' technician.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+        <a href="{% url 'technician_delete' technician.pk %}" class="btn btn-sm btn-danger">Delete</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="7">No technicians found.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,39 @@
+<!-- crm/templates/crm/appointment_list.html -->
+
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Appointments</h2>
+  <a href="{% url 'appointment_create' %}" class="btn btn-primary mb-3">Book New Appointment</a>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Customer</th>
+        <th>Technician</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for appointment in appointments %}
+        <tr>
+          <td>{{ appointment.customer.name }}</td>
+          <td>{{ appointment.technician.name }}</td>
+          <td>{{ appointment.date }}</td>
+          <td>{{ appointment.slot.start_time }} - {{ appointment.slot.end_time }}</td>
+          <td>{{ appointment.get_status_display }}</td>
+          <td>
+            <a href="{% url 'appointment_edit' appointment.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+            <a href="{% url 'appointment_delete' appointment.pk %}" class="btn btn-sm btn-danger">Delete</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="6">No appointments found.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

@@ -1,0 +1,637 @@
+<div class="tab-pane fade" id="areas" role="tabpanel" aria-labelledby="areas-tab">
+  <h3>Cities and Areas</h3>
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <h4>Cities</h4>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCityModal">Add City</button>
+    </div>
+    <div class="col-md-6">
+      <h4>Areas</h4>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAreaModal">Add Area</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <table class="table table-striped" id="citiesTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Cities will be populated here via JavaScript -->
+        </tbody>
+      </table>
+    </div>
+    <div class="col-md-6">
+      <table class="table table-striped" id="areasTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>City</th>
+            <th>Parent Area</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Areas will be populated here via JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add City Modal -->
+<div class="modal fade" id="addCityModal" tabindex="-1" aria-labelledby="addCityModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addCityModalLabel">Add City</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addCityForm">
+          <div class="mb-3">
+            <label for="cityName" class="form-label">City Name</label>
+            <input type="text" class="form-control" id="cityName" name="name" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Add City</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit City Modal -->
+<div class="modal fade" id="editCityModal" tabindex="-1" aria-labelledby="editCityModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editCityModalLabel">Edit City</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editCityForm">
+          <input type="hidden" id="editCityId" name="id">
+          <div class="mb-3">
+            <label for="editCityName" class="form-label">City Name</label>
+            <input type="text" class="form-control" id="editCityName" name="name" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Update City</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Area Modal -->
+<div class="modal fade" id="addAreaModal" tabindex="-1" aria-labelledby="addAreaModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addAreaModalLabel">Add Area</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addAreaForm">
+          <div class="mb-3">
+            <label for="areaName" class="form-label">Area Name</label>
+            <input type="text" class="form-control" id="areaName" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="areaCity" class="form-label">City</label>
+            <select class="form-select" id="areaCity" name="city" required>
+              <option value="">Select a city</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="areaParent" class="form-label">Parent Area (optional)</label>
+            <select class="form-select" id="areaParent" name="parent">
+              <option value="">Select a parent area (optional)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Add Area</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Area Modal -->
+<div class="modal fade" id="editAreaModal" tabindex="-1" aria-labelledby="editAreaModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editAreaModalLabel">Edit Area</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editAreaForm">
+          <input type="hidden" id="editAreaId" name="id">
+          <div class="mb-3">
+            <label for="editAreaName" class="form-label">Area Name</label>
+            <input type="text" class="form-control" id="editAreaName" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="editAreaCity" class="form-label">City</label>
+            <select class="form-select" id="editAreaCity" name="city" required>
+              <option value="">Select a city</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="editAreaParent" class="form-label">Parent Area (optional)</label>
+            <select class="form-select" id="editAreaParent" name="parent">
+              <option value="">Select a parent area (optional)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Area</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+(function() {
+  let currentCityId = null;
+
+  function fetchAndDisplayCitiesAndAreas() {
+    fetch('/get-cities-and-areas/')
+      .then(response => response.json())
+      .then(data => {
+        console.log('Fetched cities and areas:', data);
+        const citiesTableBody = document.querySelector('#citiesTable tbody');
+        const areasTableBody = document.querySelector('#areasTable tbody');
+        citiesTableBody.innerHTML = '';
+        areasTableBody.innerHTML = '';
+
+        data.forEach((city, index) => {
+          const cityRow = `
+            <tr>
+              <td><a href="#" class="city-link" data-id="${city.id}">${city.name}</a></td>
+              <td>
+                <button class="btn btn-sm btn-primary edit-city" data-id="${city.id}">Edit</button>
+                <button class="btn btn-sm btn-danger delete-city" data-id="${city.id}">Delete</button>
+              </td>
+            </tr>
+          `;
+          citiesTableBody.innerHTML += cityRow;
+
+          // Set the first city as current if not set
+          if (index === 0 && !currentCityId) {
+            currentCityId = city.id;
+          }
+
+          // Display all areas, including sub-areas
+          displayAreas(city.areas, areasTableBody, city.name);
+        });
+
+        // Add event listeners for edit and delete buttons
+        addEventListeners();
+        
+        // Add this line to ensure area event listeners are attached
+        addAreaEventListeners();
+      })
+      .catch(error => {
+        console.error('Error fetching cities and areas:', error);
+      });
+  }
+
+  function displayAreasForCity(cityId, data) {
+    const areasTableBody = document.querySelector('#areasTable tbody');
+    areasTableBody.innerHTML = '';
+
+    const city = data.find(c => c.id === cityId);
+    if (city) {
+      displayAreas(city.areas, areasTableBody, city.name);
+    }
+    
+    // Add this line to reattach event listeners
+    addAreaEventListeners();
+  }
+
+  function displayAreas(areas, tableBody, cityName, indent = '') {
+    areas.forEach(area => {
+      const areaRow = `
+        <tr>
+          <td>${indent}${area.name}</td>
+          <td>${cityName}</td>
+          <td>${area.parent ? area.parent.name : '-'}</td>
+          <td>
+            <button class="btn btn-sm btn-primary edit-area" data-id="${area.id}" data-city="${cityName}" data-parent="${area.parent ? area.parent.id : ''}">Edit</button>
+            <button class="btn btn-sm btn-danger delete-area" data-id="${area.id}">Delete</button>
+          </td>
+        </tr>
+      `;
+      tableBody.innerHTML += areaRow;
+
+      // Recursively display sub-areas
+      if (area.sub_areas && area.sub_areas.length > 0) {
+        displayAreas(area.sub_areas, tableBody, cityName, indent + '&nbsp;&nbsp;&nbsp;&nbsp;');
+      }
+    });
+  }
+
+  function addEventListeners() {
+    document.querySelectorAll('.edit-city').forEach(button => {
+      button.addEventListener('click', function() {
+        const cityId = this.getAttribute('data-id');
+        editCity(cityId);
+      });
+    });
+
+    document.querySelectorAll('.delete-city').forEach(button => {
+      button.addEventListener('click', function() {
+        const cityId = this.getAttribute('data-id');
+        if (confirm('Are you sure you want to delete this city?')) {
+          deleteCity(cityId);
+        }
+      });
+    });
+
+    // Add this line to attach area event listeners
+    addAreaEventListeners();
+
+    // Add event listeners for city links
+    document.querySelectorAll('.city-link').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const cityId = parseInt(this.getAttribute('data-id'));
+        currentCityId = cityId;
+        fetch('/get-cities-and-areas/')
+          .then(response => response.json())
+          .then(data => {
+            displayAreasForCity(cityId, data);
+          })
+          .catch(error => {
+            console.error('Error fetching areas for city:', error);
+          });
+      });
+    });
+  }
+
+  function addAreaEventListeners() {
+    document.querySelectorAll('.edit-area').forEach(button => {
+      // Remove existing listeners before adding a new one
+      button.removeEventListener('click', handleEditArea);
+      button.addEventListener('click', handleEditArea);
+    });
+
+    document.querySelectorAll('.delete-area').forEach(button => {
+      // Remove existing listeners before adding a new one
+      button.removeEventListener('click', handleDeleteArea);
+      button.addEventListener('click', handleDeleteArea);
+    });
+  }
+
+  function handleEditArea(event) {
+    const areaId = event.target.getAttribute('data-id');
+    editArea(areaId);
+  }
+
+  function handleDeleteArea(event) {
+    const areaId = event.target.getAttribute('data-id');
+    if (confirm('Are you sure you want to delete this area?')) {
+      deleteArea(areaId);
+    }
+  }
+
+  function editCity(cityId) {
+    fetch(`/get-city/?id=${cityId}`)
+      .then(response => response.json())
+      .then(city => {
+        document.getElementById('editCityId').value = city.id;
+        document.getElementById('editCityName').value = city.name;
+        $('#editCityModal').modal('show');
+      })
+      .catch(error => {
+        console.error('Error fetching city details:', error);
+      });
+  }
+
+  function deleteCity(cityId) {
+    if (confirm('Are you sure you want to delete this city?')) {
+      fetch('/delete-city/', {
+        method: 'POST',
+        body: JSON.stringify({ id: cityId }),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          alert('City deleted successfully');
+          fetchAndDisplayCitiesAndAreas();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while deleting the city');
+      });
+    }
+  }
+
+  function editArea(areaId) {
+    fetch(`/get-area/?id=${areaId}`)
+      .then(response => response.json())
+      .then(area => {
+        document.getElementById('editAreaId').value = area.id;
+        document.getElementById('editAreaName').value = area.name;
+        const editAreaCity = document.getElementById('editAreaCity');
+        editAreaCity.value = area.city.id;
+        editAreaCity.dataset.currentCity = area.city.id;
+        
+        // Populate parent areas for the selected city
+        populateParentAreas(area.city.id, '#editAreaParent');
+        
+        // Set the parent area after populating the dropdown
+        setTimeout(() => {
+          document.getElementById('editAreaParent').value = area.parent ? area.parent.id : '';
+        }, 100);
+        
+        $('#editAreaModal').modal('show');
+      })
+      .catch(error => {
+        console.error('Error fetching area details:', error);
+      });
+  }
+
+  function deleteArea(areaId) {
+    fetch('/delete-area/', {
+      method: 'POST',
+      body: JSON.stringify({ id: areaId }),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('Area deleted successfully');
+        fetchAndDisplayCitiesAndAreas();
+      } else {
+        alert('Error: ' + data.message);
+        console.error('Error deleting area:', data);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while deleting the area');
+    });
+  }
+
+  document.getElementById('addCityForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch('/add-city/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('City added successfully');
+        fetchAndDisplayCitiesAndAreas();
+        $('#addCityModal').modal('hide');
+        this.reset();
+      } else {
+        alert('Error: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while adding the city');
+    });
+  });
+
+  document.getElementById('editCityForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch('/edit-city/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('City updated successfully');
+        fetchAndDisplayCitiesAndAreas();
+        $('#editCityModal').modal('hide');
+      } else {
+        alert('Error: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while updating the city');
+    });
+  });
+
+  document.getElementById('addAreaForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch('/add-area/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('Area added successfully');
+        fetchAndDisplayCitiesAndAreas();
+        $('#addAreaModal').modal('hide');
+        this.reset();
+      } else {
+        alert('Error: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while adding the area');
+    });
+  });
+
+  document.getElementById('editAreaForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch('/edit-area/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('Area updated successfully');
+        fetchAndDisplayCitiesAndAreas();
+        $('#editAreaModal').modal('hide');
+      } else {
+        alert('Error: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while updating the area');
+    });
+  });
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // Add this function to handle populating parent areas
+  function populateParentAreas(cityId, parentSelectId) {
+    fetch(`/get-areas-by-city/?city_id=${cityId}`)
+      .then(response => response.json())
+      .then(areas => {
+        const parentSelect = document.querySelector(parentSelectId);
+        parentSelect.innerHTML = '<option value="">Select a parent area (optional)</option>';
+        areas.forEach(area => {
+          const option = document.createElement('option');
+          option.value = area.id;
+          option.textContent = area.name;
+          parentSelect.appendChild(option);
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching parent areas:', error);
+      });
+  }
+
+  // Update the handleModalShow function
+  function handleModalShow(event) {
+    console.log('Modal is being shown:', event.target.id);
+    fetch('/get-cities/')
+      .then(response => response.json())
+      .then(cities => {
+        console.log('Fetched cities:', cities);
+        const citySelect = event.target.querySelector('#areaCity, #editAreaCity');
+        const parentSelectId = event.target.id === 'addAreaModal' ? '#areaParent' : '#editAreaParent';
+        
+        if (citySelect) {
+          console.log('Populating select:', citySelect.id);
+          citySelect.innerHTML = '<option value="">Select a city</option>';
+          cities.forEach(city => {
+            const option = document.createElement('option');
+            option.value = city.id;
+            option.textContent = city.name;
+            if (citySelect.id === 'editAreaCity' && city.id === parseInt(citySelect.dataset.currentCity)) {
+              option.selected = true;
+            }
+            citySelect.appendChild(option);
+          });
+          console.log('Select populated:', citySelect.innerHTML);
+          
+          // Populate parent areas for the selected city
+          if (citySelect.value) {
+            populateParentAreas(citySelect.value, parentSelectId);
+          }
+          
+          // Add event listener for city change
+          citySelect.addEventListener('change', function() {
+            populateParentAreas(this.value, parentSelectId);
+          });
+        } else {
+          console.error('City select not found in modal');
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching cities:', error);
+      });
+  }
+
+  // Update the editArea function
+  function editArea(areaId) {
+    fetch(`/get-area/?id=${areaId}`)
+      .then(response => response.json())
+      .then(area => {
+        document.getElementById('editAreaId').value = area.id;
+        document.getElementById('editAreaName').value = area.name;
+        const editAreaCity = document.getElementById('editAreaCity');
+        editAreaCity.value = area.city.id;
+        editAreaCity.dataset.currentCity = area.city.id;
+        
+        // Populate parent areas for the selected city
+        populateParentAreas(area.city.id, '#editAreaParent');
+        
+        // Set the parent area after populating the dropdown
+        setTimeout(() => {
+          document.getElementById('editAreaParent').value = area.parent ? area.parent.id : '';
+        }, 100);
+        
+        $('#editAreaModal').modal('show');
+      })
+      .catch(error => {
+        console.error('Error fetching area details:', error);
+      });
+  }
+
+  // Update the setCurrentCityForAddArea function
+  function setCurrentCityForAddArea() {
+    const areaCitySelect = document.getElementById('areaCity');
+    areaCitySelect.value = currentCityId || '';
+    if (currentCityId) {
+      populateParentAreas(currentCityId, '#areaParent');
+    }
+  }
+
+  // Populate city dropdowns when add/edit area modals are shown
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded and parsed');
+    
+    const addAreaModal = document.getElementById('addAreaModal');
+    const editAreaModal = document.getElementById('editAreaModal');
+
+    if (addAreaModal) {
+      addAreaModal.addEventListener('show.bs.modal', handleModalShow);
+    } else {
+      console.error('Add Area Modal not found');
+    }
+
+    if (editAreaModal) {
+      editAreaModal.addEventListener('show.bs.modal', handleModalShow);
+    } else {
+      console.error('Edit Area Modal not found');
+    }
+  });
+
+  // Initial load of cities and areas
+  fetchAndDisplayCitiesAndAreas();
+})();
+
+function setCurrentCityForAddArea() {
+  const areaCitySelect = document.getElementById('areaCity');
+  areaCitySelect.value = currentCityId || '';
+  $(areaCitySelect).trigger('change');
+}
+</script>
+
+

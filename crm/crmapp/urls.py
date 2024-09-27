@@ -2,7 +2,7 @@
 
 from django.urls import path, include
 from . import views
-from . import views_services
+from . import views_services, views_areas
 from rest_framework.routers import DefaultRouter
 
 
@@ -36,9 +36,18 @@ urlpatterns = [
 
     path('add-team-member/', views.add_team_member, name='add_team_member'),
 
-    path('add-city/', views.add_city, name='add_city'),
-    path('add-area/', views.add_area, name='add_area'),
-    path('get-cities-and-areas/', views.get_cities_and_areas, name='get_cities_and_areas'),
+    path('add-city/', views_areas.add_city, name='add_city'),
+    path('add-area/', views_areas.add_area, name='add_area'),
+    path('get-cities-and-areas/', views_areas.get_cities_and_areas, name='get_cities_and_areas'),
+    path('get-areas-by-city/', views_areas.get_areas_by_city, name='get_areas_by_city'),
+
+    path('get-cities/', views_areas.get_cities, name='get_cities'),
+    path('get-city/', views_areas.get_city, name='get_city'),
+    path('edit-city/', views_areas.edit_city, name='edit_city'),
+    path('delete-city/', views_areas.delete_city, name='delete_city'),
+    path('get-area/', views_areas.get_area, name='get_area'),
+    path('edit-area/', views_areas.edit_area, name='edit_area'),
+    path('delete-area/', views_areas.delete_area, name='delete_area'),
 
 
     # ... other url patterns ...

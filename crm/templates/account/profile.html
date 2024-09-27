@@ -202,35 +202,7 @@
               {% endif %}
             </div>
             {% if user.is_superuser %}
-            <div class="tab-pane fade" id="areas" role="tabpanel" aria-labelledby="areas-tab">
-              <h3>Cities and Areas</h3>
-              <div class="row mb-3">
-                <div class="col">
-                  <h4>Cities</h4>
-                </div>
-                <div class="col-auto">
-                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCityModal">
-                    Add City
-                  </button>
-                </div>
-              </div>
-              <div id="cityList">
-                <!-- City list will be populated here -->
-              </div>
-              <div class="row mt-4 mb-3">
-                <div class="col">
-                  <h4>Areas</h4>
-                </div>
-                <div class="col-auto">
-                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAreaModal">
-                    Add Area
-                  </button>
-                </div>
-              </div>
-              <div id="areaList">
-                <!-- Area list will be populated here -->
-              </div>
-            </div>
+            {% include "account/areas.html" %}
             {% include "account/services.html" %}
             {% endif %}
           </div>
@@ -277,62 +249,6 @@
   </div>
 </div>
 
-<!-- Add City Modal -->
-<div class="modal fade" id="addCityModal" tabindex="-1" aria-labelledby="addCityModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="addCityModalLabel">Add City</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="addCityForm" method="post" action="{% url 'add_city' %}">
-          {% csrf_token %}
-          <div class="mb-3">
-            <label for="cityName" class="form-label">City Name</label>
-            <input type="text" class="form-control" id="cityName" name="name" required>
-          </div>
-          <button type="submit" class="btn btn-primary">Add City</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Add Area Modal -->
-<div class="modal fade" id="addAreaModal" tabindex="-1" aria-labelledby="addAreaModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="addAreaModalLabel">Add Area</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="addAreaForm" method="post" action="{% url 'add_area' %}">
-          {% csrf_token %}
-          <div class="mb-3">
-            <label for="areaName" class="form-label">Area Name</label>
-            <input type="text" class="form-control" id="areaName" name="name" required>
-          </div>
-          <div class="mb-3">
-            <label for="areaCity" class="form-label">City</label>
-            <select class="form-select" id="areaCity" name="city" required>
-              <option value="">Select a city</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="areaParent" class="form-label">Parent Area (optional)</label>
-            <select class="form-select" id="areaParent" name="parent">
-              <option value="">Select a parent area (optional)</option>
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary">Add Area</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
 {% endblock content %} {% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -342,7 +258,7 @@
       $(this).tab("show");
     });
 
-    // Handle form submission
+    // Handle form submission for adding team members
     $("#addTeamMemberForm").on("submit", function(e) {
       e.preventDefault();
       $.ajax({
@@ -362,110 +278,6 @@
         }
       });
     });
-
-    // Load cities and areas
-   function appendAreas(areas, parentElement, depth, cityId) {
-  areas.forEach(function(area) {
-    var li = $('<li></li>').text(area.name);
-    parentElement.append(li);
-    
-    $('#addAreaModal #areaParent').append('<option value="' + area.id + '" data-city="' + cityId + '">' + '&nbsp;'.repeat(depth * 2) + area.name + '</option>');
-    
-    if (area.sub_areas && area.sub_areas.length > 0) {
-      var subUl = $('<ul></ul>');
-      appendAreas(area.sub_areas, subUl, depth + 1, cityId);
-      li.append(subUl);
-    }
-  });
-}
-
-function loadCitiesAndAreas() {
-  $.get("{% url 'get_cities_and_areas' %}", function(data) {
-    console.log("Cities and areas data:", data);
-    var cityList = $('#cityList');
-    var areaList = $('#areaList');
-    var citySelect = $('#addAreaModal #areaCity');
-    var parentSelect = $('#addAreaModal #areaParent');
-    
-    cityList.empty();
-    areaList.empty();
-    citySelect.empty();
-    parentSelect.empty();
-
-    citySelect.append('<option value="">Select a city</option>');
-    parentSelect.append('<option value="">Select a parent area (optional)</option>');
-
-    data.forEach(function(city) {
-      cityList.append('<h5>' + city.name + '</h5>');
-      citySelect.append('<option value="' + city.id + '">' + city.name + '</option>');
-      
-      var areaUl = $('<ul></ul>');
-      appendAreas(city.areas, areaUl, 0, city.id);
-      cityList.append(areaUl);
-    });
-  }).fail(function(jqXHR, textStatus, errorThrown) {
-    console.error("Error fetching cities and areas:", textStatus, errorThrown);
-  });
-}
-    // Load cities and areas on page load and when the Areas tab is shown
-    loadCitiesAndAreas();
-    $('a[data-bs-toggle="tab"][href="#areas"]').on('shown.bs.tab', loadCitiesAndAreas);
-
-    // Handle city form submission
-    $('#addCityForm').on('submit', function(e) {
-      e.preventDefault();
-      $.post($(this).attr('action'), $(this).serialize())
-        .done(function(response) {
-          if (response.status === 'success') {
-            alert(response.message);
-            $('#addCityModal').modal('hide');
-            loadCitiesAndAreas();
-            clearFormInputs('#addCityForm');
-          } else {
-            alert('Error: ' + response.message);
-          }
-        })
-        .fail(function() {
-          alert('An error occurred while adding the city.');
-        });
-    });
-
-    // Handle area form submission
-    $('#addAreaForm').on('submit', function(e) {
-      e.preventDefault();
-      $.post($(this).attr('action'), $(this).serialize())
-        .done(function(response) {
-          if (response.status === 'success') {
-            alert(response.message);
-            $('#addAreaModal').modal('hide');
-            loadCitiesAndAreas();
-            clearFormInputs('#addAreaForm');
-          } else {
-            alert('Error: ' + response.message);
-          }
-        })
-        .fail(function() {
-          alert('An error occurred while adding the area.');
-        });
-    });
-
-    // Reload cities when the "Add Area" modal is shown
-    $('#addAreaModal').on('show.bs.modal', function (e) {
-      console.log("Add Area modal is being shown");
-      loadCitiesAndAreas();
-    });
-
-    // Filter parent areas based on selected city
-    $('#areaCity').on('change', function() {
-      var cityId = $(this).val();
-      $('#areaParent option').hide();
-      $('#areaParent option[value=""]').show();
-      $('#areaParent option[data-city="' + cityId + '"]').show();
-    });
-
-    function clearFormInputs(formId) {
-      $(formId).find('input[type="text"], select').val('');
-    }
   });
 </script>
 {% endblock extra_js %}

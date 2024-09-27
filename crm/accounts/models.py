@@ -16,11 +16,14 @@ class City(models.Model):
 class Area(models.Model):
     name = models.CharField(max_length=100)
     city = models.ForeignKey(City, on_delete=models.CASCADE, related_name='areas')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='sub_areas')
 
     class Meta:
-        unique_together = ('name', 'city')
+        unique_together = ('name', 'city', 'parent')
 
     def __str__(self):
+        if self.parent:
+            return f"{self.name}, {self.parent.name}, {self.city.name}"
         return f"{self.name}, {self.city.name}"
 
 class Company(models.Model):
@@ -36,9 +39,14 @@ class UserType(models.Model):
         return self.name
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(_('email address'), unique=True, null=True, blank=True)
+    USER_TYPE_CHOICES = (
+        ('ADMIN', 'Admin'),
+        ('MANAGER', 'Manager'),
+        ('TECHNICIAN', 'Technician'),
+        ('CUSTOMER', 'Customer'),
+    )
+
     mobile = models.CharField(
-        _('mobile number'),
         max_length=17,
         unique=True,
         validators=[
@@ -48,8 +56,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
             )
         ]
     )
+    email = models.EmailField(unique=True, null=True, blank=True)
     company = models.ForeignKey('Company', on_delete=models.SET_NULL, related_name='employees', null=True, blank=True)
-    user_type = models.ForeignKey('UserType', on_delete=models.SET_NULL, null=True, blank=True)
+    user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='CUSTOMER')
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(default=timezone.now)
@@ -57,6 +66,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     # New fields for technicians
     is_technician = models.BooleanField(default=False)
     service_areas = models.ManyToManyField('Area', related_name='service_users', blank=True)
+    team = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='team_members')
 
     USERNAME_FIELD = 'mobile'
     REQUIRED_FIELDS = []
@@ -67,7 +77,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.mobile
 
     def get_full_name(self):
-        return self.mobile
+        # You may want to add a 'name' field to CustomUser if it doesn't exist
+        return self.name if hasattr(self, 'name') else self.mobile
 
     def get_short_name(self):
         return self.mobile
@@ -76,6 +87,7 @@ class Service(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='sub_services')
 
     def __str__(self):
         return self.name

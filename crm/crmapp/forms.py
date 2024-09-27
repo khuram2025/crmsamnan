@@ -2,6 +2,7 @@
 
 from django import forms
 from .models import Customer, Schedule, Slot, Technician, TechnicianSchedule
+from accounts.models import CustomUser
 
 class CustomerForm(forms.ModelForm):
     create_account = forms.BooleanField(required=False, label="Create Customer Account")
@@ -15,11 +16,42 @@ class CustomerForm(forms.ModelForm):
 
 
 class TechnicianForm(forms.ModelForm):
-    create_account = forms.BooleanField(required=False, label="Create Technician Account")
+    name = forms.CharField(max_length=100)
+    mobile_number = forms.CharField(max_length=17)
+    email = forms.EmailField()
 
     class Meta:
         model = Technician
-        fields = ['name', 'technician_id', 'mobile_number',  'working_areas', 'working_shift', 'create_account']
+        fields = ['technician_id', 'working_shift', 'working_areas']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['name'].initial = self.instance.name
+            self.fields['mobile_number'].initial = self.instance.mobile_number
+            self.fields['email'].initial = self.instance.user.email
+
+    def save(self, commit=True):
+        technician = super().save(commit=False)
+        
+        # Create or update the associated CustomUser
+        if not technician.user_id:
+            user = CustomUser.objects.create(
+                mobile=self.cleaned_data['mobile_number'],
+                email=self.cleaned_data['email'],
+                is_technician=True
+            )
+            technician.user = user
+        else:
+            technician.user.mobile = self.cleaned_data['mobile_number']
+            technician.user.email = self.cleaned_data['email']
+            technician.user.save()
+
+        if commit:
+            technician.save()
+            self.save_m2m()  # Save many-to-many data for working_areas
+
+        return technician
 
 class ScheduleForm(forms.ModelForm):
     class Meta:
@@ -106,3 +138,18 @@ class AppointmentForm(forms.ModelForm):
             raise forms.ValidationError("The selected slot is not for the chosen date.")
 
         return cleaned_data
+
+class AddTeamMemberForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ['mobile', 'email', 'user_type', 'is_technician']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].required = False
+        self.fields['is_technician'].initial = True
+        self.fields['is_technician'].widget = forms.HiddenInput()
+        self.fields['user_type'].choices = [
+            ('MANAGER', 'Manager'),
+            ('TECHNICIAN', 'Technician'),
+        ]

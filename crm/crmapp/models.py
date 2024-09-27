@@ -3,7 +3,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from accounts.models import Area
+from accounts.models import Area, CustomUser
 
 
 CustomUser = get_user_model()
@@ -36,19 +36,24 @@ class Technician(models.Model):
         ('NIGHT', 'Night Shift'),
     )
 
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-    name = models.CharField(max_length=100)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, primary_key=True)
     technician_id = models.CharField(max_length=20, unique=True)
-    mobile_number = models.CharField(max_length=17, unique=True)  
     working_areas = models.ManyToManyField(Area, related_name='crmapp_technicians')
     working_shift = models.CharField(max_length=10, choices=SHIFT_CHOICES)
     created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='created_technicians')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    create_account = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.name} - {self.technician_id}"
+        return f"{self.user.get_full_name()} - {self.technician_id}"
+
+    @property
+    def name(self):
+        return self.user.get_full_name()
+
+    @property
+    def mobile_number(self):
+        return self.user.mobile
 
 class Schedule(models.Model):
     DURATION_CHOICES = [

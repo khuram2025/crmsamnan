@@ -41,6 +41,18 @@
     border-radius: 15px;
     display: inline-block;
   }
+  #cityList ul {
+  list-style-type: none;
+  padding-left: 20px;
+}
+
+#cityList > ul {
+  padding-left: 0;
+}
+
+#cityList li {
+  margin-bottom: 5px;
+}
 </style>
 {% endblock extra_css %} {% block content %}
 <div class="main-content">
@@ -80,11 +92,19 @@
                 <a class="nav-link active" id="overview-tab" data-bs-toggle="tab" href="#overview" role="tab" aria-controls="overview" aria-selected="true">Overview</a>
               </li>
               <li class="nav-item" role="presentation">
-                <a class="nav-link" id="activities-tab" data-bs-toggle="tab" href="#activities" role="tab" aria-controls="activities" aria-selected="false">Activities</a>
+                <a class="nav-link" id="Team-tab" data-bs-toggle="tab" href="#Team" role="tab" aria-controls="Team" aria-selected="false">Team</a>
               </li>
               <li class="nav-item" role="presentation">
                 <a class="nav-link" id="appointments-tab" data-bs-toggle="tab" href="#appointments" role="tab" aria-controls="appointments" aria-selected="false">Appointments</a>
               </li>
+              {% if user.is_superuser %}
+              <li class="nav-item" role="presentation">
+                <a class="nav-link" id="areas-tab" data-bs-toggle="tab" href="#areas" role="tab" aria-controls="areas" aria-selected="false">Areas</a>
+              </li>
+              <li class="nav-item" role="presentation">
+                <a class="nav-link" id="services-tab" data-bs-toggle="tab" href="#services" role="tab" aria-controls="services" aria-selected="false">Services</a>
+              </li>
+              {% endif %}
             </ul>
           </div>
 
@@ -126,10 +146,38 @@
               </div>
               {% endif %}
             </div>
-            <div class="tab-pane fade" id="activities" role="tabpanel" aria-labelledby="activities-tab">
-              <h3>Activities</h3>
-              <!-- Add your activities content here -->
-              <p>This is where you can display recent activities or a timeline of events.</p>
+            <div class="tab-pane fade" id="Team" role="tabpanel" aria-labelledby="Team-tab">
+              <h3>Team</h3>
+              <div class="row mb-3">
+                <div class="col">
+                  <h4>Team Members</h4>
+                </div>
+                <div class="col-auto">
+                  {% if user.is_superuser %}
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTeamMemberModal">
+                      Add Team Member
+                    </button>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="team-list">
+                {% if team_members %}
+                  <ul class="list-group">
+                    {% for member in team_members %}
+                      <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                          <strong>{{ member.get_full_name }}</strong>
+                          <br>
+                          <small>{{ member.get_user_type_display }}</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">{{ member.mobile }}</span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <p>No team members found.</p>
+                {% endif %}
+              </div>
             </div>
             <div class="tab-pane fade" id="appointments" role="tabpanel" aria-labelledby="appointments-tab">
               <h3>Appointments</h3>
@@ -153,6 +201,38 @@
               </ul>
               {% endif %}
             </div>
+            {% if user.is_superuser %}
+            <div class="tab-pane fade" id="areas" role="tabpanel" aria-labelledby="areas-tab">
+              <h3>Cities and Areas</h3>
+              <div class="row mb-3">
+                <div class="col">
+                  <h4>Cities</h4>
+                </div>
+                <div class="col-auto">
+                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCityModal">
+                    Add City
+                  </button>
+                </div>
+              </div>
+              <div id="cityList">
+                <!-- City list will be populated here -->
+              </div>
+              <div class="row mt-4 mb-3">
+                <div class="col">
+                  <h4>Areas</h4>
+                </div>
+                <div class="col-auto">
+                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAreaModal">
+                    Add Area
+                  </button>
+                </div>
+              </div>
+              <div id="areaList">
+                <!-- Area list will be populated here -->
+              </div>
+            </div>
+            {% include "account/services.html" %}
+            {% endif %}
           </div>
         </div>
       </div>
@@ -161,13 +241,231 @@
 
   {% block footer %} {% include "partials/footer.html" %} {% endblock footer %}
 </div>
+
+<!-- Add Team Member Modal -->
+<div class="modal fade" id="addTeamMemberModal" tabindex="-1" aria-labelledby="addTeamMemberModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addTeamMemberModalLabel">Add Team Member</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addTeamMemberForm" method="post" action="{% url 'add_team_member' %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="memberMobile" class="form-label">Mobile Number*</label>
+            <input type="text" class="form-control" id="memberMobile" name="mobile" required>
+          </div>
+          <div class="mb-3">
+            <label for="memberEmail" class="form-label">Email (optional)</label>
+            <input type="email" class="form-control" id="memberEmail" name="email">
+          </div>
+          <div class="mb-3">
+            <label for="memberUserType" class="form-label">User Type</label>
+            <select class="form-select" id="memberUserType" name="user_type" required>
+              <option value="">Select a user type</option>
+              <option value="MANAGER">Manager</option>
+              <option value="TECHNICIAN">Technician</option>
+            </select>
+          </div>
+          <input type="hidden" name="is_technician" value="true">
+          <button type="submit" class="btn btn-primary">Add Member</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add City Modal -->
+<div class="modal fade" id="addCityModal" tabindex="-1" aria-labelledby="addCityModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addCityModalLabel">Add City</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addCityForm" method="post" action="{% url 'add_city' %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="cityName" class="form-label">City Name</label>
+            <input type="text" class="form-control" id="cityName" name="name" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Add City</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Area Modal -->
+<div class="modal fade" id="addAreaModal" tabindex="-1" aria-labelledby="addAreaModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addAreaModalLabel">Add Area</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addAreaForm" method="post" action="{% url 'add_area' %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="areaName" class="form-label">Area Name</label>
+            <input type="text" class="form-control" id="areaName" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="areaCity" class="form-label">City</label>
+            <select class="form-select" id="areaCity" name="city" required>
+              <option value="">Select a city</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="areaParent" class="form-label">Parent Area (optional)</label>
+            <select class="form-select" id="areaParent" name="parent">
+              <option value="">Select a parent area (optional)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Add Area</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock content %} {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $(document).ready(function () {
     $("#profileTabs a").on("click", function (e) {
       e.preventDefault();
       $(this).tab("show");
     });
+
+    // Handle form submission
+    $("#addTeamMemberForm").on("submit", function(e) {
+      e.preventDefault();
+      $.ajax({
+        url: $(this).attr("action"),
+        type: "POST",
+        data: $(this).serialize(),
+        success: function(response) {
+          if (response.status === "success") {
+            alert(response.message);  // Show the temporary password
+            location.reload();
+          } else {
+            alert("Error adding team member: " + response.message);
+          }
+        },
+        error: function() {
+          alert("An error occurred while adding the team member.");
+        }
+      });
+    });
+
+    // Load cities and areas
+   function appendAreas(areas, parentElement, depth, cityId) {
+  areas.forEach(function(area) {
+    var li = $('<li></li>').text(area.name);
+    parentElement.append(li);
+    
+    $('#addAreaModal #areaParent').append('<option value="' + area.id + '" data-city="' + cityId + '">' + '&nbsp;'.repeat(depth * 2) + area.name + '</option>');
+    
+    if (area.sub_areas && area.sub_areas.length > 0) {
+      var subUl = $('<ul></ul>');
+      appendAreas(area.sub_areas, subUl, depth + 1, cityId);
+      li.append(subUl);
+    }
+  });
+}
+
+function loadCitiesAndAreas() {
+  $.get("{% url 'get_cities_and_areas' %}", function(data) {
+    console.log("Cities and areas data:", data);
+    var cityList = $('#cityList');
+    var areaList = $('#areaList');
+    var citySelect = $('#addAreaModal #areaCity');
+    var parentSelect = $('#addAreaModal #areaParent');
+    
+    cityList.empty();
+    areaList.empty();
+    citySelect.empty();
+    parentSelect.empty();
+
+    citySelect.append('<option value="">Select a city</option>');
+    parentSelect.append('<option value="">Select a parent area (optional)</option>');
+
+    data.forEach(function(city) {
+      cityList.append('<h5>' + city.name + '</h5>');
+      citySelect.append('<option value="' + city.id + '">' + city.name + '</option>');
+      
+      var areaUl = $('<ul></ul>');
+      appendAreas(city.areas, areaUl, 0, city.id);
+      cityList.append(areaUl);
+    });
+  }).fail(function(jqXHR, textStatus, errorThrown) {
+    console.error("Error fetching cities and areas:", textStatus, errorThrown);
+  });
+}
+    // Load cities and areas on page load and when the Areas tab is shown
+    loadCitiesAndAreas();
+    $('a[data-bs-toggle="tab"][href="#areas"]').on('shown.bs.tab', loadCitiesAndAreas);
+
+    // Handle city form submission
+    $('#addCityForm').on('submit', function(e) {
+      e.preventDefault();
+      $.post($(this).attr('action'), $(this).serialize())
+        .done(function(response) {
+          if (response.status === 'success') {
+            alert(response.message);
+            $('#addCityModal').modal('hide');
+            loadCitiesAndAreas();
+            clearFormInputs('#addCityForm');
+          } else {
+            alert('Error: ' + response.message);
+          }
+        })
+        .fail(function() {
+          alert('An error occurred while adding the city.');
+        });
+    });
+
+    // Handle area form submission
+    $('#addAreaForm').on('submit', function(e) {
+      e.preventDefault();
+      $.post($(this).attr('action'), $(this).serialize())
+        .done(function(response) {
+          if (response.status === 'success') {
+            alert(response.message);
+            $('#addAreaModal').modal('hide');
+            loadCitiesAndAreas();
+            clearFormInputs('#addAreaForm');
+          } else {
+            alert('Error: ' + response.message);
+          }
+        })
+        .fail(function() {
+          alert('An error occurred while adding the area.');
+        });
+    });
+
+    // Reload cities when the "Add Area" modal is shown
+    $('#addAreaModal').on('show.bs.modal', function (e) {
+      console.log("Add Area modal is being shown");
+      loadCitiesAndAreas();
+    });
+
+    // Filter parent areas based on selected city
+    $('#areaCity').on('change', function() {
+      var cityId = $(this).val();
+      $('#areaParent option').hide();
+      $('#areaParent option[value=""]').show();
+      $('#areaParent option[data-city="' + cityId + '"]').show();
+    });
+
+    function clearFormInputs(formId) {
+      $(formId).find('input[type="text"], select').val('');
+    }
   });
 </script>
 {% endblock extra_js %}

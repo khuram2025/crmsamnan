@@ -1,0 +1,305 @@
+<div class="tab-pane fade" id="services" role="tabpanel" aria-labelledby="services-tab">
+  <h3>Services</h3>
+  <div class="row mb-3">
+    <div class="col-md-12">
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">Add Service</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <table class="table table-striped" id="servicesTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Parent Service</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Services will be populated here via JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Service Modal -->
+<div class="modal fade" id="addServiceModal" tabindex="-1" aria-labelledby="addServiceModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addServiceModalLabel">Add Service</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addServiceForm">
+          <div class="mb-3">
+            <label for="serviceName" class="form-label">Service Name</label>
+            <input type="text" class="form-control" id="serviceName" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="serviceDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="serviceDescription" name="description"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="servicePrice" class="form-label">Price</label>
+            <input type="number" class="form-control" id="servicePrice" name="price" step="0.01" required>
+          </div>
+          <div class="mb-3">
+            <label for="serviceParent" class="form-label">Parent Service</label>
+            <select class="form-select" id="serviceParent" name="parent">
+              <option value="">None</option>
+              <!-- Parent services will be populated here via JavaScript -->
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Add Service</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Service Modal -->
+<div class="modal fade" id="editServiceModal" tabindex="-1" aria-labelledby="editServiceModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editServiceModalLabel">Edit Service</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editServiceForm">
+          <input type="hidden" id="editServiceId" name="id">
+          <div class="mb-3">
+            <label for="editServiceName" class="form-label">Service Name</label>
+            <input type="text" class="form-control" id="editServiceName" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="editServiceDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="editServiceDescription" name="description"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="editServicePrice" class="form-label">Price</label>
+            <input type="number" class="form-control" id="editServicePrice" name="price" step="0.01" required>
+          </div>
+          <div class="mb-3">
+            <label for="editServiceParent" class="form-label">Parent Service</label>
+            <select class="form-select" id="editServiceParent" name="parent">
+              <option value="">None</option>
+              <!-- Parent services will be populated here via JavaScript -->
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Service</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+// Function to fetch and display services
+function fetchAndDisplayServices() {
+    fetch('/get-services/')
+        .then(response => response.json())
+        .then(services => {
+            const tableBody = document.querySelector('#servicesTable tbody');
+            tableBody.innerHTML = ''; // Clear existing rows
+            services.forEach(service => {
+                const isSubService = service.parent !== null;
+                const row = `
+                    <tr>
+                        <td>${isSubService ? '&nbsp;&nbsp;&nbsp;&nbsp;' : ''}${service.name}</td>
+                        <td>${service.description || ''}</td>
+                        <td>${service.price}</td>
+                        <td>${isSubService ? 'Sub-service' : 'Main service'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary edit-service" data-id="${service.id}">Edit</button>
+                            <button class="btn btn-sm btn-danger delete-service" data-id="${service.id}">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+            
+            // Add event listeners for edit and delete buttons
+            document.querySelectorAll('.edit-service').forEach(button => {
+                button.addEventListener('click', function() {
+                    const serviceId = this.getAttribute('data-id');
+                    editService(serviceId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-service').forEach(button => {
+                button.addEventListener('click', function() {
+                    const serviceId = this.getAttribute('data-id');
+                    if (confirm('Are you sure you want to delete this service?')) {
+                        deleteService(serviceId);
+                    }
+                });
+            });
+            
+            // Populate parent service dropdowns after fetching services
+            populateParentServiceDropdowns();
+        })
+        .catch(error => {
+            console.error('Error fetching services:', error);
+        });
+}
+
+// Function to edit a service
+function editService(serviceId) {
+    fetch(`/get-service/?id=${serviceId}`)
+        .then(response => response.json())
+        .then(service => {
+            document.getElementById('editServiceId').value = service.id;
+            document.getElementById('editServiceName').value = service.name;
+            document.getElementById('editServiceDescription').value = service.description;
+            document.getElementById('editServicePrice').value = service.price;
+            document.getElementById('editServiceParent').value = service.parent ? service.parent.id : '';
+            
+            $('#editServiceModal').modal('show');
+        })
+        .catch(error => {
+            console.error('Error fetching service details:', error);
+        });
+}
+
+// Function to populate parent service dropdowns
+function populateParentServiceDropdowns() {
+    fetch('/get-services/')
+        .then(response => response.json())
+        .then(services => {
+            const addServiceParent = document.getElementById('serviceParent');
+            const editServiceParent = document.getElementById('editServiceParent');
+            
+            // Clear existing options
+            addServiceParent.innerHTML = '<option value="">None</option>';
+            editServiceParent.innerHTML = '<option value="">None</option>';
+            
+            services.forEach(service => {
+                // Only add main services (services without a parent) to the dropdown
+                if (!service.parent) {
+                    const option = `<option value="${service.id}">${service.name}</option>`;
+                    addServiceParent.innerHTML += option;
+                    editServiceParent.innerHTML += option;
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching services for dropdown:', error);
+        });
+}
+
+// Call fetchAndDisplayServices when the page loads
+document.addEventListener('DOMContentLoaded', fetchAndDisplayServices);
+
+// Add event listener for add service modal show
+$('#addServiceModal').on('show.bs.modal', function (e) {
+    populateParentServiceDropdowns();
+});
+
+// Function to delete a service
+function deleteService(serviceId) {
+    const formData = new FormData();
+    formData.append('id', serviceId);
+
+    fetch('/delete-service/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Service deleted successfully');
+            fetchAndDisplayServices(); // Refresh the service list
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while deleting the service');
+    });
+}
+
+// Add event listener for edit service form submission
+document.getElementById('editServiceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/edit-service/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Service updated successfully');
+            fetchAndDisplayServices(); // Refresh the service list
+            $('#editServiceModal').modal('hide'); // Close the modal
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the service');
+    });
+});
+
+// Add event listener for add service form submission
+document.getElementById('addServiceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/add-service/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Service added successfully');
+            fetchAndDisplayServices(); // Refresh the service list
+            $('#addServiceModal').modal('hide'); // Close the modal
+            this.reset(); // Reset the form
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the service');
+    });
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+</script>

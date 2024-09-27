@@ -45,10 +45,11 @@ def custom_login(request):
 @login_required
 def profile(request):
     user = request.user
+    team_members = user.team_members.all()  # Assuming the related_name is 'team_members'
     context = {
         'user': user,
+        'team_members': team_members,
         'appointments': user.appointments_as_technician.all() if user.is_technician else user.appointments_as_customer.all(),
-        # Add any other context data you might need
     }
     return render(request, 'account/profile.html', context)
 

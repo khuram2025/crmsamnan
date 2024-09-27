@@ -342,3 +342,110 @@ def get_or_create_customer(request):
     mobile = request.GET.get('mobile')
     customer, created = Customer.objects.get_or_create(mobile_number=mobile, defaults={'name': name})
     return JsonResponse({'id': customer.id, 'name': customer.name, 'mobile': customer.mobile_number})
+
+
+from django.contrib.auth.decorators import user_passes_test
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from .forms import AddTeamMemberForm
+from accounts.models import CustomUser
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def add_team_member(request):
+    form = AddTeamMemberForm(request.POST)
+    if form.is_valid():
+        new_member = form.save(commit=False)
+        new_member.team = request.user
+        new_member.is_technician = (form.cleaned_data['user_type'] == 'TECHNICIAN')
+        password = CustomUser.objects.make_random_password()
+        new_member.set_password(password)
+        new_member.save()
+        
+        # Create the associated Technician profile
+        if new_member.is_technician:
+            Technician.objects.create(user=new_member)
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Team member added successfully. Their temporary password is: {password}'
+        })
+    else:
+        return JsonResponse({'status': 'error', 'message': form.errors.as_json()})
+
+from django.contrib.auth.decorators import user_passes_test
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from accounts.models import City, Area
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def add_city(request):
+    name = request.POST.get('name')
+    if name:
+        city, created = City.objects.get_or_create(name=name)
+        if created:
+            return JsonResponse({'status': 'success', 'message': 'City added successfully.'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'City already exists.'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid city name.'})
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def add_area(request):
+    name = request.POST.get('name')
+    city_id = request.POST.get('city')
+    parent_id = request.POST.get('parent')
+    if name and city_id:
+        try:
+            city = City.objects.get(id=city_id)
+            parent = Area.objects.get(id=parent_id) if parent_id else None
+            area, created = Area.objects.get_or_create(name=name, city=city, parent=parent)
+            if created:
+                return JsonResponse({'status': 'success', 'message': 'Area added successfully.'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Area already exists in this city.'})
+        except City.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Invalid city.'})
+        except Area.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Invalid parent area.'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid area name or city.'})
+
+@user_passes_test(lambda u: u.is_superuser)
+def get_cities_and_areas(request):
+    cities = City.objects.all().prefetch_related('areas')
+    data = []
+    for city in cities:
+        city_data = {
+            'id': city.id,
+            'name': city.name,
+            'areas': get_area_hierarchy(city.areas.filter(parent=None))
+        }
+        data.append(city_data)
+    print("Cities and areas data:", data)  # Add this line for debugging
+    return JsonResponse(data, safe=False)
+
+def get_area_hierarchy(areas):
+    result = []
+    for area in areas:
+        area_data = {
+            'id': area.id,
+            'name': area.name,
+            'sub_areas': get_area_hierarchy(area.sub_areas.all())
+        }
+        result.append(area_data)
+    return result
+
+@user_passes_test(lambda u: u.is_superuser)
+def get_cities_and_areas(request):
+    cities = City.objects.all().prefetch_related('areas')
+    data = []
+    for city in cities:
+        city_data = {
+            'id': city.id,
+            'name': city.name,
+            'areas': [{'id': area.id, 'name': area.name} for area in city.areas.all()]
+        }
+        data.append(city_data)
+    print("Cities and areas data:", data)  # Add this line for debugging
+    return JsonResponse(data, safe=False)

@@ -2,6 +2,7 @@
 
 from django.urls import path, include
 from . import views
+from . import views_services
 from rest_framework.routers import DefaultRouter
 
 
@@ -32,5 +33,19 @@ urlpatterns = [
     path('appointments/<int:pk>/edit/', views.appointment_edit, name='appointment_edit'),
     path('appointments/<int:pk>/delete/', views.appointment_delete, name='appointment_delete'),
     path('get-available-slots/', views.get_available_slots, name='get_available_slots'),
+
+    path('add-team-member/', views.add_team_member, name='add_team_member'),
+
+    path('add-city/', views.add_city, name='add_city'),
+    path('add-area/', views.add_area, name='add_area'),
+    path('get-cities-and-areas/', views.get_cities_and_areas, name='get_cities_and_areas'),
+
+
+    # ... other url patterns ...
+    path('get-services/', views_services.get_services, name='get_services'),
+    path('add-service/', views_services.add_service, name='add_service'),
+    path('edit-service/', views_services.edit_service, name='edit_service'),
+    path('delete-service/', views_services.delete_service, name='delete_service'),
+    path('get-service/', views_services.get_service, name='get_service'),
 
 ]

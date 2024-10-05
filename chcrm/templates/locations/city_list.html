@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Cities{% endblock %}
+
+{% block content %}
+    <h1>Cities</h1>
+    <a href="{% url 'city_create' %}">Add New City</a>
+    <ul>
+    {% for city in cities %}
+        <li>
+            {{ city.name }}
+            <a href="{% url 'city_update' city.pk %}">Edit</a>
+            <a href="{% url 'city_delete' city.pk %}">Delete</a>
+        </li>
+    {% endfor %}
+    </ul>
+{% endblock %}

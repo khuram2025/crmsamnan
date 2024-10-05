@@ -49,63 +49,6 @@ def customer_add(request):
         form = CustomerForm()
     return render(request, 'crm/customer_form.html', {'form': form})
 
-
-# crm/views.py
-
-
-
-@login_required
-def technician_list(request):
-    technicians = Technician.objects.all()
-    return render(request, 'crm/technician_list.html', {'technicians': technicians})
-
-@login_required
-def technician_add(request):
-    if request.method == 'POST':
-        form = TechnicianForm(request.POST)
-        if form.is_valid():
-            technician = form.save(commit=False)
-            technician.created_by = request.user
-            technician.save()
-            
-            if form.cleaned_data['create_account']:
-                password = CustomUser.objects.make_random_password()
-                user = CustomUser.objects.create_user(
-                    mobile=technician.mobile_number,
-                    password=password
-                )
-                technician.user = user
-                technician.save()
-                messages.success(request, f'Technician added successfully. Their temporary password is: {password}')
-            else:
-                messages.success(request, 'Technician added successfully.')
-            return redirect('technician_list')
-    else:
-        form = TechnicianForm()
-    return render(request, 'crm/technician_form.html', {'form': form})
-
-@login_required
-def technician_edit(request, pk):
-    technician = get_object_or_404(Technician, pk=pk)
-    if request.method == 'POST':
-        form = TechnicianForm(request.POST, instance=technician)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Technician updated successfully.')
-            return redirect('technician_list')
-    else:
-        form = TechnicianForm(instance=technician)
-    return render(request, 'crm/technician_form.html', {'form': form, 'technician': technician})
-
-@login_required
-def technician_delete(request, pk):
-    technician = get_object_or_404(Technician, pk=pk)
-    if request.method == 'POST':
-        technician.delete()
-        messages.success(request, 'Technician deleted successfully.')
-        return redirect('technician_list')
-    return render(request, 'crm/technician_confirm_delete.html', {'technician': technician})
-
 @login_required
 def schedule_list(request):
     schedules = Schedule.objects.all()

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Shifts</h1>
+  <a href="{% url 'shift_create' %}">Create New Shift</a>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Start Time</th>
+        <th>End Time</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for shift in shifts %}
+        <tr>
+          <td>{{ shift.name }}</td>
+          <td>{{ shift.start_time }}</td>
+          <td>{{ shift.end_time }}</td>
+          <td>
+            <a href="{% url 'shift_edit' shift.pk %}">Edit</a>
+            <a href="{% url 'shift_delete' shift.pk %}">Delete</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

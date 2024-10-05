@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Delete Working Slot</h1>
+<p>Are you sure you want to delete the working slot: {{ working_slot }}?</p>
+<form method="post">
+    {% csrf_token %}
+    <input type="submit" value="Confirm">
+</form>
+<a href="{% url 'working_slot_list' %}">Cancel</a>
+{% endblock %}

@@ -29,6 +29,7 @@ class Customer(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.mobile_number}"
+
 class Technician(models.Model):
     SHIFT_CHOICES = (
         ('MORNING', 'Morning Shift'),
@@ -92,9 +93,6 @@ class Schedule(models.Model):
     def get_duration(self):
         return self.custom_duration if self.slot_duration == 0 else self.slot_duration
 
-# crm/models.py
-
-# crm/models.py
 
 from django.db import models
 from django.utils import timezone

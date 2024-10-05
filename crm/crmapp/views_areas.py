@@ -176,3 +176,8 @@ def delete_area(request):
         return JsonResponse({'status': 'error', 'message': 'Area not found.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
+
+@user_passes_test(lambda u: u.is_superuser)
+def get_working_areas(request):
+    areas = Area.objects.all().values('id', 'name')
+    return JsonResponse(list(areas), safe=False)

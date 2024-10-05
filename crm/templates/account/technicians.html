@@ -1,0 +1,339 @@
+<div class="tab-pane fade" id="technicians" role="tabpanel" aria-labelledby="technicians-tab">
+  <h3>Technicians</h3>
+  <div class="row mb-3">
+    <div class="col-md-12">
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTechnicianModal">Add Technician</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <table class="table table-striped" id="techniciansTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Mobile</th>
+            <th>Email</th>
+            <th>Working Shift</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Technicians will be populated here via JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Technician Modal -->
+<div class="modal fade" id="addTechnicianModal" tabindex="-1" aria-labelledby="addTechnicianModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addTechnicianModalLabel">Add Technician</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addTechnicianForm">
+          <div class="mb-3">
+            <label for="technicianId" class="form-label">Technician ID</label>
+            <input type="text" class="form-control" id="technicianId" name="technician_id" required>
+          </div>
+          <div class="mb-3">
+            <label for="technicianName" class="form-label">Name</label>
+            <input type="text" class="form-control" id="technicianName" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="technicianMobile" class="form-label">Mobile</label>
+            <input type="text" class="form-control" id="technicianMobile" name="mobile" required>
+          </div>
+          <div class="mb-3">
+            <label for="technicianEmail" class="form-label">Email</label>
+            <input type="email" class="form-control" id="technicianEmail" name="email" required>
+          </div>
+          <div class="mb-3">
+            <label for="technicianWorkingShift" class="form-label">Working Shift</label>
+            <select class="form-control" id="technicianWorkingShift" name="working_shift" required>
+              <option value="">Select Working Shift</option>
+              <option value="MORNING">Morning</option>
+              <option value="AFTERNOON">Afternoon</option>
+              <option value="NIGHT">Night</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Working Areas</label>
+            <div id="workingAreas">
+              <!-- Working areas will be populated here via JavaScript -->
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Add Technician</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Technician Modal -->
+<div class="modal fade" id="editTechnicianModal" tabindex="-1" aria-labelledby="editTechnicianModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editTechnicianModalLabel">Edit Technician</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editTechnicianForm">
+          <input type="hidden" id="editTechnicianOldId" name="old_technician_id">
+          <div class="mb-3">
+            <label for="editTechnicianId" class="form-label">Technician ID</label>
+            <input type="text" class="form-control" id="editTechnicianId" name="technician_id" required>
+          </div>
+          <div class="mb-3">
+            <label for="editTechnicianName" class="form-label">Name</label>
+            <input type="text" class="form-control" id="editTechnicianName" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="editTechnicianMobile" class="form-label">Mobile</label>
+            <input type="text" class="form-control" id="editTechnicianMobile" name="mobile" required>
+          </div>
+          <div class="mb-3">
+            <label for="editTechnicianEmail" class="form-label">Email</label>
+            <input type="email" class="form-control" id="editTechnicianEmail" name="email" required>
+          </div>
+          <div class="mb-3">
+            <label for="editTechnicianWorkingShift" class="form-label">Working Shift</label>
+            <select class="form-control" id="editTechnicianWorkingShift" name="working_shift" required>
+              <option value="MORNING">Morning</option>
+              <option value="AFTERNOON">Afternoon</option>
+              <option value="NIGHT">Night</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Working Areas</label>
+            <div id="editWorkingAreas">
+              <!-- Working areas will be populated here via JavaScript -->
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Technician</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  function fetchAndDisplayTechnicians() {
+    fetch('/get-technicians/')
+      .then(response => response.json())
+      .then(data => {
+        const techniciansTableBody = document.querySelector('#techniciansTable tbody');
+        techniciansTableBody.innerHTML = '';
+
+        data.forEach(technician => {
+          const technicianRow = `
+            <tr>
+              <td>${technician.name}</td>
+              <td>${technician.mobile}</td>
+              <td>${technician.email}</td>
+              <td>${technician.working_shift}</td>
+              <td>
+                <button class="btn btn-sm btn-primary edit-technician" data-id="${technician.technician_id}">Edit</button>
+                <button class="btn btn-sm btn-danger delete-technician" data-id="${technician.technician_id}">Delete</button>
+              </td>
+            </tr>
+          `;
+          techniciansTableBody.innerHTML += technicianRow;
+        });
+
+        addEventListeners();
+      })
+      .catch(error => {
+        console.error('Error fetching technicians:', error);
+      });
+  }
+
+  function addEventListeners() {
+    document.querySelectorAll('.edit-technician').forEach(button => {
+      button.addEventListener('click', function() {
+        const technicianId = this.getAttribute('data-id');
+        editTechnician(technicianId);
+      });
+    });
+
+    document.querySelectorAll('.delete-technician').forEach(button => {
+      button.addEventListener('click', function() {
+        const technicianId = this.getAttribute('data-id');
+        if (confirm('Are you sure you want to delete this technician?')) {
+          deleteTechnician(technicianId);
+        }
+      });
+    });
+  }
+
+  function editTechnician(technicianId) {
+    fetch(`/get-technician/?id=${technicianId}`)
+      .then(response => response.json())
+      .then(technician => {
+        document.getElementById('editTechnicianOldId').value = technician.technician_id;
+        document.getElementById('editTechnicianId').value = technician.technician_id;
+        document.getElementById('editTechnicianName').value = technician.name;
+        document.getElementById('editTechnicianMobile').value = technician.mobile;
+        document.getElementById('editTechnicianEmail').value = technician.email;
+        document.getElementById('editTechnicianWorkingShift').value = technician.working_shift;
+        
+        // Populate working areas
+        const workingAreasDiv = document.getElementById('editWorkingAreas');
+        workingAreasDiv.innerHTML = ''; // Clear existing checkboxes
+        technician.working_areas.forEach(area => {
+          const checkbox = document.createElement('div');
+          checkbox.className = 'form-check';
+          checkbox.innerHTML = `
+            <input class="form-check-input" type="checkbox" name="working_areas" value="${area.id}" id="editArea${area.id}" ${technician.working_areas.includes(area.id) ? 'checked' : ''}>
+            <label class="form-check-label" for="editArea${area.id}">${area.name}</label>
+          `;
+          workingAreasDiv.appendChild(checkbox);
+        });
+        
+        $('#editTechnicianModal').modal('show');
+      })
+      .catch(error => {
+        console.error('Error fetching technician details:', error);
+      });
+  }
+
+  function deleteTechnician(technicianId) {
+    if (confirm('Are you sure you want to delete this technician?')) {
+      fetch('/delete-technician/', {
+        method: 'POST',
+        body: JSON.stringify({ id: technicianId }),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          alert('Technician deleted successfully');
+          fetchAndDisplayTechnicians();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while deleting the technician');
+      });
+    }
+  }
+
+  function fetchAndDisplayWorkingAreas() {
+    fetch('/get-working-areas/')
+      .then(response => response.json())
+      .then(areas => {
+        const workingAreasDiv = document.getElementById('workingAreas');
+        const editWorkingAreasDiv = document.getElementById('editWorkingAreas');
+        const areasHtml = areas.map(area => `
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="working_areas" value="${area.id}" id="area${area.id}">
+            <label class="form-check-label" for="area${area.id}">${area.name}</label>
+          </div>
+        `).join('');
+        workingAreasDiv.innerHTML = areasHtml;
+        editWorkingAreasDiv.innerHTML = areasHtml;
+      })
+      .catch(error => console.error('Error fetching working areas:', error));
+  }
+
+  document.getElementById('addTechnicianForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    // Convert working_areas to an array
+    const workingAreas = Array.from(formData.getAll('working_areas'));
+    formData.delete('working_areas');
+    workingAreas.forEach(area => formData.append('working_areas', area));
+
+    fetch('/add-technician/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('Technician added successfully');
+        fetchAndDisplayTechnicians();
+        $('#addTechnicianModal').modal('hide');
+        this.reset();
+      } else {
+        alert('Error: ' + JSON.stringify(data.errors));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while adding the technician');
+    });
+  });
+
+  document.getElementById('editTechnicianForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    // Log the form data before sending
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+
+    fetch('/edit-technician/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('Technician updated successfully');
+        fetchAndDisplayTechnicians();
+        $('#editTechnicianModal').modal('hide');
+      } else {
+        console.error('Error updating technician:', data);
+        alert('Error: ' + JSON.stringify(data.message));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while updating the technician: ' + error);
+    });
+  });
+
+  // Initial load of technicians and working areas
+  fetchAndDisplayTechnicians();
+  fetchAndDisplayWorkingAreas();
+
+  // Add event listeners for modal show events
+  $('#addTechnicianModal').on('show.bs.modal', fetchAndDisplayWorkingAreas);
+  $('#editTechnicianModal').on('show.bs.modal', fetchAndDisplayWorkingAreas);
+
+})();
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>

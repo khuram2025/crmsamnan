@@ -2,16 +2,17 @@
 
 from django.urls import path, include
 from . import views
-from . import views_services, views_areas
+from . import views_services, views_areas, views_technicians
 from rest_framework.routers import DefaultRouter
 
 
 urlpatterns = [
     # ... existing url patterns ...
-    path('technicians/', views.technician_list, name='technician_list'),
-    path('technicians/add/', views.technician_add, name='technician_add'),
-    path('technicians/<int:pk>/edit/', views.technician_edit, name='technician_edit'),
-    path('technicians/<int:pk>/delete/', views.technician_delete, name='technician_delete'),
+    path('get-technicians/', views_technicians.get_technicians, name='get_technicians'),
+    path('get-technician/', views_technicians.get_technician, name='get_technician'),
+    path('add-technician/', views_technicians.add_technician, name='add_technician'),
+    path('edit-technician/', views_technicians.edit_technician, name='edit_technician'),
+    path('delete-technician/', views_technicians.delete_technician, name='delete_technician'),
 
     path('schedules/', views.schedule_list, name='schedule_list'),
     path('schedules/create/', views.schedule_create, name='schedule_create'),
@@ -57,4 +58,5 @@ urlpatterns = [
     path('delete-service/', views_services.delete_service, name='delete_service'),
     path('get-service/', views_services.get_service, name='get_service'),
 
+    path('get-working-areas/', views_areas.get_working_areas, name='get_working_areas'),
 ]

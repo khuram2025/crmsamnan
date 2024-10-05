@@ -2,7 +2,7 @@
 
 from django import forms
 from .models import Customer, Schedule, Slot, Technician, TechnicianSchedule
-from accounts.models import CustomUser
+from accounts.models import CustomUser, Area
 
 class CustomerForm(forms.ModelForm):
     create_account = forms.BooleanField(required=False, label="Create Customer Account")
@@ -17,8 +17,12 @@ class CustomerForm(forms.ModelForm):
 
 class TechnicianForm(forms.ModelForm):
     name = forms.CharField(max_length=100)
-    mobile_number = forms.CharField(max_length=17)
+    mobile = forms.CharField(max_length=17)  # Changed from mobile_number
     email = forms.EmailField()
+    working_areas = forms.ModelMultipleChoiceField(
+        queryset=Area.objects.all(),
+        widget=forms.CheckboxSelectMultiple
+    )
 
     class Meta:
         model = Technician
@@ -28,7 +32,7 @@ class TechnicianForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
             self.fields['name'].initial = self.instance.name
-            self.fields['mobile_number'].initial = self.instance.mobile_number
+            self.fields['mobile'].initial = self.instance.mobile_number
             self.fields['email'].initial = self.instance.user.email
 
     def save(self, commit=True):
@@ -37,13 +41,13 @@ class TechnicianForm(forms.ModelForm):
         # Create or update the associated CustomUser
         if not technician.user_id:
             user = CustomUser.objects.create(
-                mobile=self.cleaned_data['mobile_number'],
+                mobile=self.cleaned_data['mobile'],
                 email=self.cleaned_data['email'],
                 is_technician=True
             )
             technician.user = user
         else:
-            technician.user.mobile = self.cleaned_data['mobile_number']
+            technician.user.mobile = self.cleaned_data['mobile']
             technician.user.email = self.cleaned_data['email']
             technician.user.save()
 

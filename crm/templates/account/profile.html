@@ -104,6 +104,9 @@
               <li class="nav-item" role="presentation">
                 <a class="nav-link" id="services-tab" data-bs-toggle="tab" href="#services" role="tab" aria-controls="services" aria-selected="false">Services</a>
               </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="technicians-tab" data-bs-toggle="tab" data-bs-target="#technicians" type="button" role="tab" aria-controls="technicians" aria-selected="false">Technicians</button>
+              </li>
               {% endif %}
             </ul>
           </div>
@@ -204,6 +207,7 @@
             {% if user.is_superuser %}
             {% include "account/areas.html" %}
             {% include "account/services.html" %}
+            {% include "account/technicians.html" %}
             {% endif %}
           </div>
         </div>

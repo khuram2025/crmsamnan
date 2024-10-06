@@ -44,6 +44,7 @@ class Technician(models.Model):
     created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='created_technicians')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.technician_id}"
@@ -186,7 +187,7 @@ class Appointment(models.Model):
     )
 
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='appointments')
-    slot = models.OneToOneField(Slot, on_delete=models.CASCADE, related_name='appointment')
+    slot = models.OneToOneField('Slot', on_delete=models.CASCADE, related_name='appointment')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='SCHEDULED')
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -202,3 +203,14 @@ class Appointment(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+    @property
+    def date(self):
+        return self.slot.date
+
+    @property
+    def start_time(self):
+        return self.slot.start_time
+
+    class Meta:
+        ordering = ['slot__date', 'slot__start_time']

@@ -1,39 +1,165 @@
-<!-- crm/templates/crm/appointment_list.html -->
-
-{% extends 'base.html' %}
+{% extends 'partials/base.html' %}
 
 {% block content %}
-  <h2>Appointments</h2>
-  <a href="{% url 'appointment_create' %}" class="btn btn-primary mb-3">Book New Appointment</a>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Customer</th>
-        <th>Technician</th>
-        <th>Date</th>
-        <th>Time</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for appointment in appointments %}
-        <tr>
-          <td>{{ appointment.customer.name }}</td>
-          <td>{{ appointment.technician.name }}</td>
-          <td>{{ appointment.date }}</td>
-          <td>{{ appointment.slot.start_time }} - {{ appointment.slot.end_time }}</td>
-          <td>{{ appointment.get_status_display }}</td>
-          <td>
-            <a href="{% url 'appointment_edit' appointment.pk %}" class="btn btn-sm btn-secondary">Edit</a>
-            <a href="{% url 'appointment_delete' appointment.pk %}" class="btn btn-sm btn-danger">Delete</a>
-          </td>
-        </tr>
-      {% empty %}
-        <tr>
-          <td colspan="6">No appointments found.</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="main-content">
+  <div class="page-content">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-header">
+              <!-- ... (header content remains the same) ... -->
+            </div>
+          </div>
+        </div>
+        <div class="col-xxl-9">
+          <div class="card">
+            <div class="card-body">
+              <table class="table" id="appointment-table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Technician</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for appointment in appointments %}
+                    <tr data-appointment-id="{{ appointment.id }}" class="{% if forloop.first %}selected{% endif %}">
+                      <td>
+                        {{ appointment.customer.name }}
+                        <br>
+                        {{ appointment.customer.mobile_number }}
+                      </td>
+                      <td>
+                        {{ appointment.slot.technician.name }}
+                        <br>
+                        ID: {{ appointment.slot.technician.technician_id }}
+                      </td>
+                      <td>{{ appointment.slot.date|date:"M d, Y" }}</td>
+                      <td>{{ appointment.slot.start_time|time:"H:i" }} - {{ appointment.slot.end_time|time:"H:i" }}</td>
+                      <td>{{ appointment.get_status_display }}</td>
+                      <td>
+                        <a href="{% url 'appointment_edit' appointment.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+                        <a href="{% url 'appointment_delete' appointment.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="6">No appointments found.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xxl-3">
+          <div class="card" id="appointment-detail">
+            {% with selected_appointment=appointments.first %}
+              <div class="card-body text-center">
+                <div class="position-relative d-inline-block">
+                  <img src="{{ selected_appointment.customer.profile_image.url|default:'assets/images/users/avatar-default.jpg' }}" alt="" class="avatar-lg rounded-circle img-thumbnail material-shadow">
+                  <span class="contact-active position-absolute rounded-circle bg-success"><span class="visually-hidden"></span></span>
+                </div>
+                <h5 class="mt-4 mb-1">{{ selected_appointment.customer.name }}</h5>
+                <p class="text-muted">{{ selected_appointment.customer.mobile_number }}</p>
+
+                <ul class="list-inline mb-0">
+                  <li class="list-inline-item avatar-xs">
+                    <a href="tel:{{ selected_appointment.customer.mobile_number }}" class="avatar-title bg-success-subtle text-success fs-15 rounded">
+                      <i class="ri-phone-line"></i>
+                    </a>
+                  </li>
+                  <li class="list-inline-item avatar-xs">
+                    <a href="mailto:{{ selected_appointment.customer.email }}" class="avatar-title bg-danger-subtle text-danger fs-15 rounded">
+                      <i class="ri-mail-line"></i>
+                    </a>
+                  </li>
+                  <li class="list-inline-item avatar-xs">
+                    <a href="javascript:void(0);" class="avatar-title bg-warning-subtle text-warning fs-15 rounded">
+                      <i class="ri-question-answer-line"></i>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+              <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3">Appointment Information</h6>
+                <div class="table-responsive table-card">
+                  <table class="table table-borderless mb-0">
+                    <tbody>
+                      <tr>
+                        <td class="fw-medium" scope="row">Technician</td>
+                        <td>{{ selected_appointment.slot.technician.name }}</td>
+                      </tr>
+                      <tr>
+                        <td class="fw-medium" scope="row">Date</td>
+                        <td>{{ selected_appointment.slot.date|date:"M d, Y" }}</td>
+                      </tr>
+                      <tr>
+                        <td class="fw-medium" scope="row">Time</td>
+                        <td>{{ selected_appointment.slot.start_time|time:"H:i" }} - {{ selected_appointment.slot.end_time|time:"H:i" }}</td>
+                      </tr>
+                      <tr>
+                        <td class="fw-medium" scope="row">Status</td>
+                        <td>{{ selected_appointment.get_status_display }}</td>
+                      </tr>
+                      <tr>
+                        <td class="fw-medium" scope="row">Notes</td>
+                        <td>{{ selected_appointment.notes|default:"No notes available" }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const appointmentTable = document.getElementById('appointment-table');
+  const appointmentDetail = document.getElementById('appointment-detail');
+
+  appointmentTable.addEventListener('click', function(e) {
+    const row = e.target.closest('tr');
+    if (row) {
+      const appointmentId = row.dataset.appointmentId;
+      // Remove 'selected' class from all rows
+      appointmentTable.querySelectorAll('tr').forEach(tr => tr.classList.remove('selected'));
+      // Add 'selected' class to clicked row
+      row.classList.add('selected');
+      // Fetch appointment details and update the detail card
+      fetchAppointmentDetails(appointmentId);
+    }
+  });
+
+  function fetchAppointmentDetails(appointmentId) {
+    // Fetch appointment details using AJAX
+    fetch(`/api/appointment/${appointmentId}/`)
+      .then(response => response.json())
+      .then(data => {
+        // Update the appointment detail card with fetched data
+        updateAppointmentDetailCard(data);
+      })
+      .catch(error => console.error('Error fetching appointment details:', error));
+  }
+
+  function updateAppointmentDetailCard(appointmentData) {
+    // Update the content of the appointment detail card
+    // This is a simplified example; adjust according to your actual data structure
+    appointmentDetail.querySelector('h5').textContent = appointmentData.customer_name;
+    appointmentDetail.querySelector('p.text-muted').textContent = appointmentData.customer_mobile;
+    // Update other fields...
+  }
+});
+</script>
 {% endblock %}

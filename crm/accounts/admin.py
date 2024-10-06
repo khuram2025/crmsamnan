@@ -31,15 +31,18 @@ from django.contrib import messages
 from django.utils.html import escape
 from django.http import Http404
 
+
+
 class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
     change_password_form = AdminPasswordChangeForm
     model = CustomUser
-    list_display = ('mobile', 'email', 'company', 'user_type', 'is_staff', 'is_active', 'is_technician')
+    list_display = ('mobile', 'get_full_name', 'email', 'company', 'user_type', 'is_staff', 'is_active', 'is_technician')
     list_filter = ('company', 'user_type', 'is_staff', 'is_active', 'is_technician')
     fieldsets = (
         (None, {'fields': ('mobile', 'email', 'password')}),
+        (_('Personal info'), {'fields': ('first_name', 'last_name')}),
         ('Company Info', {'fields': ('company', 'user_type')}),
         ('Technician Info', {'fields': ('is_technician', 'service_areas')}),
         ('Permissions', {'fields': ('is_staff', 'is_active', 'groups', 'user_permissions')}),
@@ -47,12 +50,16 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('mobile', 'email', 'company', 'user_type', 'password1', 'password2', 'is_staff', 'is_active', 'is_technician', 'service_areas')}
+            'fields': ('mobile', 'email', 'first_name', 'last_name', 'company', 'user_type', 'password1', 'password2', 'is_staff', 'is_active', 'is_technician', 'service_areas')}
         ),
     )
-    search_fields = ('mobile', 'email')
+    search_fields = ('mobile', 'email', 'first_name', 'last_name')
     ordering = ('mobile',)
     filter_horizontal = ('service_areas',)
+
+    def get_full_name(self, obj):
+        return obj.get_full_name()
+    get_full_name.short_description = 'Full Name'
 
     def get_fieldsets(self, request, obj=None):
         if not obj:
@@ -71,7 +78,7 @@ class CustomUserAdmin(UserAdmin):
             password = CustomUser.objects.make_random_password()
             user.set_password(password)
             user.save()
-            self.message_user(request, f"Password for {user.mobile} has been reset to: {password}")
+            self.message_user(request, f"Password for {user.get_full_name()} ({user.mobile}) has been reset to: {password}")
     reset_password.short_description = "Reset password for selected users"
 
     def get_urls(self):
@@ -109,7 +116,7 @@ class CustomUserAdmin(UserAdmin):
         adminForm = admin.helpers.AdminForm(form, fieldsets, {})
 
         context = {
-            'title': _('Change password: %s') % escape(user.get_username()),
+            'title': _('Change password: %s') % escape(user.get_full_name()),
             'adminForm': adminForm,
             'form_url': form_url,
             'form': form,
@@ -135,6 +142,7 @@ class CustomUserAdmin(UserAdmin):
             'admin/auth/user/change_password.html',
             context,
         )
+
 
 class ServiceAdmin(admin.ModelAdmin):
     list_display = ('name', 'price')

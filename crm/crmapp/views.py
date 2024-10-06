@@ -163,8 +163,29 @@ from django.http import JsonResponse
 
 @login_required
 def appointment_list(request):
-    appointments = Appointment.objects.all().order_by('date', 'slot__start_time')
-    return render(request, 'crm/appointment_list.html', {'appointments': appointments})
+    appointments = Appointment.objects.select_related(
+        'slot', 
+        'customer', 
+        'slot__technician', 
+        'slot__technician__user',
+        'customer__user'
+    ).order_by('slot__date', 'slot__start_time')
+    
+    for appointment in appointments:
+        print(f"Appointment ID: {appointment.id}")
+        print(f"Customer Name: {appointment.customer.name}")
+        print(f"Customer Mobile: {appointment.customer.mobile_number}")
+        print(f"Technician Name: {appointment.slot.technician.name}")
+        print(f"Technician ID: {appointment.slot.technician.technician_id}")
+        print(f"Slot Date: {appointment.slot.date}")
+        print(f"Slot Time: {appointment.slot.start_time} - {appointment.slot.end_time}")
+        print("---")
+    
+    context = {
+        'appointments': appointments,
+        'appointment_count': appointments.count(),
+    }
+    return render(request, 'crm/appointment_list.html', context)
 
 @login_required
 def appointment_create(request):
@@ -250,11 +271,27 @@ def load_areas(request):
         print(f"Error in load_areas: {str(e)}")  # Debug log
         return JsonResponse({'error': str(e)}, status=500)
 
+
+
 @login_required
 def load_technicians(request):
     area_id = request.GET.get('area_id')
-    technicians = Technician.objects.filter(working_areas__id=area_id).values('id', 'name')
-    return JsonResponse(list(technicians), safe=False)
+    technicians = Technician.objects.filter(working_areas__id=area_id).values(
+        'user_id', 
+        'user__first_name', 
+        'user__last_name', 
+        'user__mobile', 
+        'technician_id'
+    )
+    technician_list = [
+        {
+            'id': tech['user_id'],
+            'name': f"{tech['user__first_name']} {tech['user__last_name']}".strip() or tech['user__mobile'],
+            'technician_id': tech['technician_id']
+        }
+        for tech in technicians
+    ]
+    return JsonResponse(technician_list, safe=False)
 
 @login_required
 def load_slots(request):

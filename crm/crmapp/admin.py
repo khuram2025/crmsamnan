@@ -28,13 +28,23 @@ class CustomerAdmin(admin.ModelAdmin):
             obj.save()
             self.message_user(request, f"Customer account created with temporary password: {password}")
             
+
+
 @admin.register(Technician)
 class TechnicianAdmin(admin.ModelAdmin):
-    list_display = ('name', 'technician_id', 'mobile_number', 'get_working_areas', 'working_shift', 'created_by', 'created_at')
+    list_display = ('get_full_name', 'technician_id', 'get_mobile_number', 'get_working_areas', 'working_shift', 'created_by', 'created_at')
     list_filter = ('working_shift', 'created_at', 'working_areas')
-    search_fields = ('name', 'technician_id', 'mobile_number', 'working_areas__name')
+    search_fields = ('user__first_name', 'user__last_name', 'technician_id', 'user__mobile', 'working_areas__name')
     readonly_fields = ('created_by', 'created_at', 'updated_at')
     filter_horizontal = ('working_areas',)
+
+    def get_full_name(self, obj):
+        return obj.user.get_full_name()
+    get_full_name.short_description = 'Name'
+
+    def get_mobile_number(self, obj):
+        return obj.user.mobile
+    get_mobile_number.short_description = 'Mobile Number'
 
     def get_working_areas(self, obj):
         return ", ".join([area.name for area in obj.working_areas.all()])
@@ -45,16 +55,27 @@ class TechnicianAdmin(admin.ModelAdmin):
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
 
-        if obj.create_account and not obj.user:
+        if not obj.user:
             # Create a CustomUser for this technician
             password = CustomUser.objects.make_random_password()
             user = CustomUser.objects.create_user(
-                mobile=obj.mobile_number,
-                password=password
+                mobile=form.cleaned_data.get('mobile_number'),
+                first_name=form.cleaned_data.get('first_name'),
+                last_name=form.cleaned_data.get('last_name'),
+                password=password,
+                is_technician=True
             )
             obj.user = user
             obj.save()
             self.message_user(request, f"Technician account created with temporary password: {password}")
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if not obj:  # This is an add form
+            form.base_fields['first_name'] = forms.CharField(max_length=30)
+            form.base_fields['last_name'] = forms.CharField(max_length=150)
+            form.base_fields['mobile_number'] = forms.CharField(max_length=17)
+        return form
 
 # crm/admin.py
 

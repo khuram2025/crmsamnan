@@ -171,15 +171,7 @@ def appointment_list(request):
         'customer__user'
     ).order_by('slot__date', 'slot__start_time')
     
-    for appointment in appointments:
-        print(f"Appointment ID: {appointment.id}")
-        print(f"Customer Name: {appointment.customer.name}")
-        print(f"Customer Mobile: {appointment.customer.mobile_number}")
-        print(f"Technician Name: {appointment.slot.technician.name}")
-        print(f"Technician ID: {appointment.slot.technician.technician_id}")
-        print(f"Slot Date: {appointment.slot.date}")
-        print(f"Slot Time: {appointment.slot.start_time} - {appointment.slot.end_time}")
-        print("---")
+
     
     context = {
         'appointments': appointments,
@@ -223,9 +215,28 @@ def appointment_edit(request, pk):
             messages.success(request, 'Appointment updated successfully.')
             return redirect('appointment_list')
     else:
-        form = AppointmentForm(instance=appointment)
-    return render(request, 'crm/appointment_form.html', {'form': form, 'appointment': appointment})
+        initial_data = {
+            'city': appointment.slot.technician.working_areas.first().city.pk,
+            'area': appointment.slot.technician.working_areas.first().pk,
+            'technician': appointment.slot.technician.user.pk,  # Use the CustomUser's pk
+            'name': appointment.customer.name,
+            'mobile_number': appointment.customer.mobile_number,
+            'notes': appointment.notes,
+            'date': appointment.slot.date,
+            'slot': appointment.slot.pk,
+            
+        }
+        form = AppointmentForm(instance=appointment, initial=initial_data)
+    
+    context = {
+        'form': form,
+        'appointment': appointment,
+        'edit_mode': True,
+        'initial_data': initial_data,  # Pass initial data to the template
+    }
+    return render(request, 'crm/appointment_form.html', context)
 
+    
 @login_required
 def appointment_delete(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)

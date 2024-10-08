@@ -43,9 +43,10 @@
                       <td>{{ appointment.slot.start_time|time:"H:i" }} - {{ appointment.slot.end_time|time:"H:i" }}</td>
                       <td>{{ appointment.get_status_display }}</td>
                       <td>
-                        <a href="{% url 'appointment_edit' appointment.pk %}" class="btn btn-sm btn-secondary">Edit</a>
-                        <a href="{% url 'appointment_delete' appointment.pk %}" class="btn btn-sm btn-danger">Delete</a>
-                      </td>
+        <a href="{% url 'appointment_edit' appointment.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+        <a href="{% url 'appointment_delete' appointment.pk %}" class="btn btn-sm btn-danger">Delete</a>
+      </td>
+
                     </tr>
                   {% empty %}
                     <tr>

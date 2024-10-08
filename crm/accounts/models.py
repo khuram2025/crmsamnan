@@ -137,20 +137,3 @@ class Service(models.Model):
     def __str__(self):
         return self.name
 
-class Appointment(models.Model):
-    customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='appointments_as_customer')
-    technician = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='appointments_as_technician')
-    service = models.ForeignKey(Service, on_delete=models.CASCADE)
-    area = models.ForeignKey(Area, on_delete=models.CASCADE)
-    appointment_date = models.DateField()
-    appointment_time = models.TimeField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=20, choices=[
-        ('scheduled', 'Scheduled'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled')
-    ], default='scheduled')
-
-    def __str__(self):
-        return f"Appointment for {self.customer} on {self.appointment_date} at {self.appointment_time}"

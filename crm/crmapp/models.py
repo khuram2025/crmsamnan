@@ -188,6 +188,7 @@ class Appointment(models.Model):
     )
 
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='appointments')
+    technician = models.ForeignKey(Technician, on_delete=models.SET_NULL, null=True, related_name='appointments')
     slot = models.OneToOneField('Slot', on_delete=models.CASCADE, related_name='appointment')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='SCHEDULED')
     notes = models.TextField(blank=True, null=True)

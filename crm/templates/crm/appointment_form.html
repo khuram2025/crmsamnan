@@ -152,7 +152,7 @@
     <div class="container-fluid">
       <div class="row">
         <div class="col-xl-4 customer-info">
-          <h2>Appointment Information</h2>
+          <h2>{% if edit_mode %}Edit{% else %}Create{% endif %} Appointment</h2>
           <form id="appointmentForm" method="post">
             {% csrf_token %}
             <div class="form-group">
@@ -181,9 +181,7 @@
             </div>
             <div class="form-group">
               <label for="id_service">Service(s)</label>
-              <select id="id_service" name="service" class="form-control" multiple>
-                <!-- Options will be dynamically populated -->
-              </select>
+              {{ form.service }}
             </div>
             <div style="display: none;">
                 {{ form.date }} {{ form.slot }}
@@ -517,6 +515,47 @@
     }
 
     $("#appointmentForm").change(updateSummary);
+
+    // Pre-select values if in edit mode
+    {% if edit_mode %}
+      var cityId = "{{ initial_data.city }}";
+      var areaId = "{{ initial_data.area }}";
+      var technicianId = "{{ initial_data.technician }}";
+      var date = "{{ initial_data.date|date:'Y-m-d' }}";
+      var slotId = "{{ initial_data.slot }}";
+      var services = {{ initial_data.service|safe }};
+
+      $("#id_city").val(cityId).trigger('change');
+      
+      // Use setTimeout to ensure area options are loaded before selecting
+      setTimeout(function() {
+        $("#id_area").val(areaId).trigger('change');
+        
+        // Use another setTimeout for technician selection
+        setTimeout(function() {
+          $("#id_technician").val(technicianId).trigger('change');
+          
+          // Load time slots for the selected date
+          loadTimeSlots(date);
+          
+          // Pre-select the time slot
+          setTimeout(function() {
+            $(".time-slot").each(function() {
+              if ($(this).data('slot-id') == slotId) {
+                $(this).addClass('selected');
+              }
+            });
+          }, 500);
+          
+          // Pre-select services
+          $("#id_service").val(services);
+          
+          // Update the summary
+          updateSummary();
+        }, 500);
+      }, 500);
+    {% endif %}
+
   });
 </script>
 {% endblock extra_js %}

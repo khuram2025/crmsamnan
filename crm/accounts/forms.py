@@ -3,7 +3,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, AuthenticationForm
 from django.core.validators import RegexValidator
-from .models import CustomUser, Company, Appointment, Area
+from .models import CustomUser, Company,  Area
 
 class CustomUserCreationForm(UserCreationForm):
     company = forms.ModelChoiceField(queryset=Company.objects.all(), required=False)
@@ -36,22 +36,3 @@ class CustomAuthenticationForm(AuthenticationForm):
         self.fields['username'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Enter mobile number'})
         self.fields['password'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Enter password'})
 
-class AppointmentForm(forms.ModelForm):
-    class Meta:
-        model = Appointment
-        fields = ['service', 'area', 'appointment_date', 'appointment_time']
-        widgets = {
-            'appointment_date': forms.DateInput(attrs={'type': 'date'}),
-            'appointment_time': forms.TimeInput(attrs={'type': 'time'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['area'].queryset = Area.objects.none()
-
-        if 'area' in self.data:
-            try:
-                city_id = int(self.data.get('city'))
-                self.fields['area'].queryset = Area.objects.filter(city_id=city_id)
-            except (ValueError, TypeError):
-                pass

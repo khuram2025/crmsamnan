@@ -3,7 +3,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .forms import CustomUserCreationForm, CustomUserChangeForm
-from .models import CustomUser, Company, UserType, City, Area, Service, Appointment
+from .models import CustomUser, Company, UserType, City, Area, Service
 
 class AreaInline(admin.TabularInline):
     model = Area
@@ -166,10 +166,7 @@ class ServiceAdmin(admin.ModelAdmin):
     list_display = ('name', 'price')
     search_fields = ('name',)
 
-class AppointmentAdmin(admin.ModelAdmin):
-    list_display = ('customer', 'technician', 'service', 'area', 'appointment_date', 'appointment_time', 'status')
-    list_filter = ('status', 'appointment_date', 'service', 'area')
-    search_fields = ('customer__mobile', 'technician__mobile', 'service__name')
+
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(Company)
@@ -177,4 +174,3 @@ admin.site.register(UserType)
 admin.site.register(City, CityAdmin)
 admin.site.register(Area, AreaAdmin)
 admin.site.register(Service, ServiceAdmin)
-admin.site.register(Appointment, AppointmentAdmin)

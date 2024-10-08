@@ -200,24 +200,68 @@
 </div>
             <div class="tab-pane fade" id="appointments" role="tabpanel" aria-labelledby="appointments-tab">
               <h3>Appointments</h3>
-              {% if user.is_technician %}
-              <h4>Upcoming Appointments</h4>
-              <ul>
-                {% for appointment in user.appointments_as_technician.all %}
-                <li>{{ appointment.appointment_date|date:"d M Y" }} at {{ appointment.appointment_time|time:"H:i" }} - {{ appointment.customer.get_full_name }}</li>
-                {% empty %}
-                <li>No upcoming appointments.</li>
-                {% endfor %}
-              </ul>
+              {% if user.user_type == 'MANAGER' or user.is_technician %}
+                <h4>{% if user.user_type == 'MANAGER' %}Team {% endif %}Appointments ({{ appointment_count }})</h4>
+                {% if appointments %}
+                   <div class="col-xxl-9">
+          <div class="card">
+            <div class="card-body">
+              <table class="table" id="appointment-table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Technician</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for appointment in appointments %}
+                    <tr data-appointment-id="{{ appointment.id }}" class="{% if forloop.first %}selected{% endif %}">
+                      <td>
+                        {{ appointment.customer.name }}
+                        <br>
+                        {{ appointment.customer.mobile_number }}
+                      </td>
+                      <td>
+                        {{ appointment.slot.technician.name }}
+                        <br>
+                        ID: {{ appointment.slot.technician.technician_id }}
+                      </td>
+                      <td>{{ appointment.slot.date|date:"M d, Y" }}</td>
+                      <td>{{ appointment.slot.start_time|time:"H:i" }} - {{ appointment.slot.end_time|time:"H:i" }}</td>
+                      <td>{{ appointment.get_status_display }}</td>
+                      <td>
+                        <a href="{% url 'appointment_edit' appointment.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+                        <a href="{% url 'appointment_delete' appointment.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="6">No appointments found.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+                {% else %}
+                  <p>No appointments scheduled.</p>
+                {% endif %}
               {% else %}
-              <h4>Your Appointments</h4>
-              <ul>
-                {% for appointment in user.appointments_as_customer.all %}
-                <li>{{ appointment.appointment_date|date:"d M Y" }} at {{ appointment.appointment_time|time:"H:i" }} - {{ appointment.service.name }} with {{ appointment.technician.get_full_name }}</li>
-                {% empty %}
-                <li>No appointments scheduled.</li>
-                {% endfor %}
-              </ul>
+                <h4>Your Appointments ({{ appointment_count }})</h4>
+                {% if appointments %}
+                  <ul>
+                    {% for appointment in appointments %}
+                      <li>{{ appointment.appointment_date|date:"d M Y" }} at {{ appointment.appointment_time|time:"H:i" }} - {{ appointment.technician.user.get_full_name }}</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <p>No appointments scheduled.</p>
+                {% endif %}
               {% endif %}
             </div>
             {% if user.is_superuser %}

@@ -45,7 +45,13 @@ def custom_login(request):
 @login_required
 def profile(request):
     user = request.user
-    team_members = user.team_members.all()  # Assuming the related_name is 'team_members'
+    team_members = []
+    
+    if user.user_type == 'MANAGER':
+        team_members = user.get_technicians()
+    elif user.is_technician:
+        team_members = user.get_managers()
+    
     context = {
         'user': user,
         'team_members': team_members,

@@ -97,7 +97,7 @@
               <li class="nav-item" role="presentation">
                 <a class="nav-link" id="appointments-tab" data-bs-toggle="tab" href="#appointments" role="tab" aria-controls="appointments" aria-selected="false">Appointments</a>
               </li>
-              {% if user.is_superuser %}
+              {% if user.is_superuser or user.user_type == 'ADMIN' or user.user_type == 'MANAGER' %}
               <li class="nav-item" role="presentation">
                 <a class="nav-link" id="areas-tab" data-bs-toggle="tab" href="#areas" role="tab" aria-controls="areas" aria-selected="false">Areas</a>
               </li>
@@ -149,39 +149,55 @@
               </div>
               {% endif %}
             </div>
-            <div class="tab-pane fade" id="Team" role="tabpanel" aria-labelledby="Team-tab">
-              <h3>Team</h3>
-              <div class="row mb-3">
-                <div class="col">
-                  <h4>Team Members</h4>
-                </div>
-                <div class="col-auto">
-                  {% if user.is_superuser %}
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTeamMemberModal">
-                      Add Team Member
-                    </button>
-                  {% endif %}
-                </div>
-              </div>
-              <div class="team-list">
-                {% if team_members %}
-                  <ul class="list-group">
-                    {% for member in team_members %}
-                      <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                          <strong>{{ member.get_full_name }}</strong>
-                          <br>
-                          <small>{{ member.get_user_type_display }}</small>
-                        </div>
-                        <span class="badge bg-primary rounded-pill">{{ member.mobile }}</span>
-                      </li>
-                    {% endfor %}
-                  </ul>
-                {% else %}
-                  <p>No team members found.</p>
-                {% endif %}
-              </div>
+<div class="tab-pane fade" id="Team" role="tabpanel" aria-labelledby="Team-tab">
+  <h3>Team</h3>
+  <div class="row mb-3">
+    <div class="col">
+      <h4>
+        {% if user.user_type == 'MANAGER' %}
+          My Technicians
+        {% elif user.is_technician %}
+          My Managers
+        {% else %}
+          Team Members
+        {% endif %}
+      </h4>
+    </div>
+    <div class="col-auto">
+      {% if user.is_superuser or user.user_type == 'MANAGER' %}
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTeamMemberModal">
+          {% if user.user_type == 'MANAGER' %}Add Technician{% else %}Add Team Member{% endif %}
+        </button>
+      {% endif %}
+    </div>
+  </div>
+  <div class="team-list">
+    {% if team_members %}
+      <ul class="list-group">
+        {% for member in team_members %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ member.get_full_name }}</strong>
+              <br>
+              <small>{{ member.get_user_type_display }}</small>
             </div>
+            <span class="badge bg-primary rounded-pill">{{ member.mobile }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>
+        {% if user.user_type == 'MANAGER' %}
+          No technicians assigned yet.
+        {% elif user.is_technician %}
+          No managers assigned yet.
+        {% else %}
+          No team members found.
+        {% endif %}
+      </p>
+    {% endif %}
+  </div>
+</div>
             <div class="tab-pane fade" id="appointments" role="tabpanel" aria-labelledby="appointments-tab">
               <h3>Appointments</h3>
               {% if user.is_technician %}

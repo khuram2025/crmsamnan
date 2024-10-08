@@ -354,3 +354,12 @@ def add_team_member(request):
         return JsonResponse({'status': 'error', 'message': form.errors.as_json()})
 
 
+
+def ajax_load_technician_services(request):
+    technician_id = request.GET.get('technician_id')
+    try:
+        technician = Technician.objects.get(user_id=technician_id)
+        services = technician.services.all().values('id', 'name')
+        return JsonResponse(list(services), safe=False)
+    except Technician.DoesNotExist:
+        return JsonResponse([], safe=False)

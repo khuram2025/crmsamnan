@@ -2,7 +2,7 @@
 
 from django import forms
 from .models import Customer, Schedule, Slot, Technician, TechnicianSchedule
-from accounts.models import CustomUser, Area
+from accounts.models import CustomUser, Area, Service
 
 class CustomerForm(forms.ModelForm):
     create_account = forms.BooleanField(required=False, label="Create Customer Account")
@@ -96,10 +96,11 @@ class AppointmentForm(forms.ModelForm):
     slot = forms.ModelChoiceField(queryset=Slot.objects.none(), empty_label="Select a time slot", required=False)
     name = forms.CharField(max_length=100)
     mobile_number = forms.CharField(max_length=17)
+    service = forms.ModelMultipleChoiceField(queryset=Service.objects.all(), required=False)
 
     class Meta:
         model = Appointment
-        fields = ['city', 'area', 'technician', 'date', 'slot', 'name', 'mobile_number', 'notes']
+        fields = ['city', 'area', 'technician', 'name', 'mobile_number', 'notes', 'date', 'slot', 'service']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

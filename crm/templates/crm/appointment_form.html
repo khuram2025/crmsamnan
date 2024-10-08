@@ -38,13 +38,13 @@
     background-color: #f0f0f0;
   }
   .calendar .selected {
-    background-color: #007bff;
+    background-color: #405189;
     color: white;
   }
   .calendar .has-slots::after {
     content: "•";
     display: block;
-    color: #007bff;
+    color: #405189;
   }
   .calendar .muted {
     color: #ccc;
@@ -54,22 +54,98 @@
     display: none;
     margin-top: 20px;
   }
+  
+  /* Remove border and add some spacing */
+  .time-slots h3 {
+    margin-bottom: 15px;
+  }
+  
+  /* Style for the container of time slot buttons */
+  .time-slots > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
   .time-slot {
     display: inline-block;
     padding: 8px 12px;
-    margin: 5px;
-    background-color: #007bff;
+    background-color: #405189;
     color: white;
     border-radius: 4px;
     cursor: pointer;
+    border: none; /* Ensure no border on the buttons */
   }
+  
   .time-slot:hover {
-    background-color: #0056b3;
+    background-color: #506399;
   }
+  
   .time-slot.selected {
-    background-color: #28a745;
+    background-color: #0ab39c;
+  }
+
+  .appointment-details {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .appointment-details h2 {
+    color: #405189;
+    margin-bottom: 20px;
+    font-weight: 600;
+  }
+
+  .appointment-summary {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  .appointment-summary li {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .appointment-summary .label {
+    font-weight: 600;
+    min-width: 120px;
+    color: #555;
+  }
+
+  .appointment-summary .value {
+    flex: 1;
+    color: #333;
+  }
+
+  .create-appointment-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 20px;
+    background-color: #405189;
+    border: none;
+    transition: background-color 0.3s ease;
+  }
+
+  .create-appointment-btn:hover {
+    background-color: #324376;
+  }
+
+  .appointment-details-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .appointment-details-content {
+    flex-grow: 1;
   }
 </style>
+
 {% endblock extra_css %} {% block content %}
 <div class="main-content">
   <div class="page-content">
@@ -104,14 +180,14 @@
               {{ form.notes }}
             </div>
             <div class="form-group">
-              <label for="id_service">Service</label>
-              <select id="id_service" name="service" class="form-control">
-                <option value="">Select Service</option>
-                <option value="cbp">Complete Blood Picture (CBP)</option>
-                <option value="health-men-test">Health Men Test</option>
+              <label for="id_service">Service(s)</label>
+              <select id="id_service" name="service" class="form-control" multiple>
+                <!-- Options will be dynamically populated -->
               </select>
             </div>
-            {{ form.date }} {{ form.slot }}
+            <div style="display: none;">
+                {{ form.date }} {{ form.slot }}
+            </div>
           </form>
         </div>
 
@@ -147,9 +223,15 @@
         </div>
 
         <div class="col-xl-4">
-          <h2>Appointment Details</h2>
-          <div id="appointmentSummary"></div>
-          <button type="submit" class="btn btn-primary mt-3" form="appointmentForm">Create Appointment</button>
+          <div class="appointment-details-container">
+            <div class="appointment-details-content">
+              <div class="appointment-details">
+                <h2>Appointment Details</h2>
+                <ul id="appointmentSummary" class="appointment-summary"></ul>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary create-appointment-btn" form="appointmentForm">Create Appointment</button>
+          </div>
         </div>
       </div>
     </div>
@@ -378,24 +460,60 @@
     });
 
     $("#id_technician").change(function () {
-      var selectedDate = $("#id_date").val();
-      if (selectedDate) {
-        loadTimeSlots(new Date(selectedDate));
+      var technicianId = $(this).val();
+      if (technicianId) {
+        loadTechnicianServices(technicianId);
+        var selectedDate = $("#id_date").val();
+        if (selectedDate) {
+          loadTimeSlots(new Date(selectedDate));
+        }
+      } else {
+        $("#id_service").html('<option value="">Select a technician first</option>');
       }
     });
 
+    function loadTechnicianServices(technicianId) {
+      $.ajax({
+        url: '{% url "ajax_load_technician_services" %}',
+        data: {
+          technician_id: technicianId,
+        },
+        success: function (data) {
+          console.log("Received services data:", data);
+          $("#id_service").html('');
+          if (Array.isArray(data) && data.length > 0) {
+            $.each(data, function (index, service) {
+              $("#id_service").append($("<option></option>").val(service.id).html(service.name));
+            });
+          } else {
+            $("#id_service").html('<option value="">No services available for this technician</option>');
+          }
+        },
+        error: function (xhr, status, error) {
+          console.error("AJAX error:", status, error);
+          console.error("Response Text:", xhr.responseText);
+        },
+      });
+    }
+
     function updateSummary() {
-      var summary = "<ul>";
-      summary += `<li><strong>City:</strong> ${$("#id_city option:selected").text()}</li>`;
-      summary += `<li><strong>Area:</strong> ${$("#id_area option:selected").text()}</li>`;
-      summary += `<li><strong>Technician:</strong> ${$("#id_technician option:selected").text()}</li>`;
-      summary += `<li><strong>Customer:</strong> ${$("#id_name").val()} (${$("#id_mobile_number").val()})</li>`;
-      summary += `<li><strong>Date:</strong> ${$("#id_date").val()}</li>`;
-      summary += `<li><strong>Time Slot:</strong> ${$(".time-slot.selected").text()}</li>`;
-      summary += `<li><strong>Service:</strong> ${$("#id_service option:selected").text()}</li>`;
-      summary += `<li><strong>Notes:</strong> ${$("#id_notes").val()}</li>`;
-      summary += "</ul>";
+      var summary = "";
+      summary += `<li><span class="label">City:</span> <span class="value">${$("#id_city option:selected").text()}</span></li>`;
+      summary += `<li><span class="label">Area:</span> <span class="value">${$("#id_area option:selected").text()}</span></li>`;
+      summary += `<li><span class="label">Technician:</span> <span class="value">${$("#id_technician option:selected").text()}</span></li>`;
+      summary += `<li><span class="label">Customer:</span> <span class="value">${$("#id_name").val()} (${$("#id_mobile_number").val()})</span></li>`;
+      summary += `<li><span class="label">Date:</span> <span class="value">${formatDateForDisplay($("#id_date").val())}</span></li>`;
+      summary += `<li><span class="label">Time Slot:</span> <span class="value">${$(".time-slot.selected").text()}</span></li>`;
+      summary += `<li><span class="label">Service(s):</span> <span class="value">${$("#id_service option:selected").map(function() { return $(this).text(); }).get().join(", ")}</span></li>`;
+      summary += `<li><span class="label">Notes:</span> <span class="value">${$("#id_notes").val()}</span></li>`;
       $("#appointmentSummary").html(summary);
+    }
+
+    function formatDateForDisplay(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return date.toLocaleDateString('en-US', options);
     }
 
     $("#appointmentForm").change(updateSummary);

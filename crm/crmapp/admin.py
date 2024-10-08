@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 from .models import CustomUser, Customer, Technician
-from accounts.models import City, Area
+from accounts.models import City, Area, Service
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
@@ -32,11 +32,11 @@ class CustomerAdmin(admin.ModelAdmin):
 
 @admin.register(Technician)
 class TechnicianAdmin(admin.ModelAdmin):
-    list_display = ('get_full_name', 'technician_id', 'get_mobile_number', 'get_working_areas', 'working_shift', 'created_by', 'created_at')
-    list_filter = ('working_shift', 'created_at', 'working_areas')
-    search_fields = ('user__first_name', 'user__last_name', 'technician_id', 'user__mobile', 'working_areas__name')
+    list_display = ('get_full_name', 'technician_id', 'get_mobile_number', 'get_working_areas', 'working_shift', 'get_services', 'created_by', 'created_at')
+    list_filter = ('working_shift', 'created_at', 'working_areas', 'services')
+    search_fields = ('user__first_name', 'user__last_name', 'technician_id', 'user__mobile', 'working_areas__name', 'services__name')
     readonly_fields = ('created_by', 'created_at', 'updated_at')
-    filter_horizontal = ('working_areas',)
+    filter_horizontal = ('working_areas', 'services')
 
     def get_full_name(self, obj):
         return obj.user.get_full_name()
@@ -49,6 +49,10 @@ class TechnicianAdmin(admin.ModelAdmin):
     def get_working_areas(self, obj):
         return ", ".join([area.name for area in obj.working_areas.all()])
     get_working_areas.short_description = 'Working Areas'
+
+    def get_services(self, obj):
+        return ", ".join([service.name for service in obj.services.all()])
+    get_services.short_description = 'Services'
 
     def save_model(self, request, obj, form, change):
         if not change:
@@ -67,6 +71,11 @@ class TechnicianAdmin(admin.ModelAdmin):
             )
             obj.user = user
             obj.save()
+            
+            # Assign services
+            if 'services' in form.cleaned_data:
+                obj.services.set(form.cleaned_data['services'])
+            
             self.message_user(request, f"Technician account created with temporary password: {password}")
 
     def get_form(self, request, obj=None, **kwargs):
@@ -75,7 +84,17 @@ class TechnicianAdmin(admin.ModelAdmin):
             form.base_fields['first_name'] = forms.CharField(max_length=30)
             form.base_fields['last_name'] = forms.CharField(max_length=150)
             form.base_fields['mobile_number'] = forms.CharField(max_length=17)
+            form.base_fields['services'] = forms.ModelMultipleChoiceField(
+                queryset=Service.objects.all(),
+                required=False,
+                widget=admin.widgets.FilteredSelectMultiple('Services', False)
+            )
         return form
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        if 'services' in form.cleaned_data:
+            form.instance.services.set(form.cleaned_data['services'])
 
 # crm/admin.py
 

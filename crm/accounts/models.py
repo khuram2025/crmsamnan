@@ -45,6 +45,15 @@ from django.utils import timezone
 from django.core.validators import RegexValidator
 from .managers import CustomUserManager
 
+# accounts/models.py
+
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
+from django.core.validators import RegexValidator
+from .managers import CustomUserManager
+
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     USER_TYPE_CHOICES = (
         ('ADMIN', 'Admin'),
@@ -75,7 +84,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     # Fields for technicians
     is_technician = models.BooleanField(default=False)
     service_areas = models.ManyToManyField('Area', related_name='service_users', blank=True)
-    team = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='team_members')
+    
+    # New field for manager-technician relationship
+    managers = models.ManyToManyField('self', symmetrical=False, related_name='technicians', blank=True)
 
     USERNAME_FIELD = 'mobile'
     REQUIRED_FIELDS = ['first_name', 'last_name']
@@ -86,15 +97,36 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.get_full_name() or self.mobile
 
     def get_full_name(self):
-        """
-        Return the first_name plus the last_name, with a space in between.
-        """
         full_name = '%s %s' % (self.first_name, self.last_name)
         return full_name.strip()
 
     def get_short_name(self):
-        """Return the short name for the user."""
         return self.first_name
+
+    def get_user_type_display(self):
+        return dict(self.USER_TYPE_CHOICES)[self.user_type]
+
+    @property
+    def is_manager(self):
+        return self.user_type == 'MANAGER'
+
+    def add_technician(self, technician):
+        if self.is_manager and technician.is_technician:
+            self.technicians.add(technician)
+
+    def remove_technician(self, technician):
+        if self.is_manager:
+            self.technicians.remove(technician)
+
+    def get_managers(self):
+        if self.is_technician:
+            return self.managers.all()
+        return CustomUser.objects.none()
+
+    def get_technicians(self):
+        if self.is_manager:
+            return self.technicians.all()
+        return CustomUser.objects.none()
         
 class Service(models.Model):
     name = models.CharField(max_length=100)

@@ -30,6 +30,7 @@ urlpatterns = [
     path('ajax/load-technicians/', views.load_technicians, name='ajax_load_technicians'),
     path('ajax/load-slots/', views.load_slots, name='ajax_load_slots'),
     path('ajax/get-or-create-customer/', views.get_or_create_customer, name='ajax_get_or_create_customer'),
+    path('ajax/load-technician-services/', views.ajax_load_technician_services, name='ajax_load_technician_services'),
 
     path('appointments/<int:pk>/edit/', views.appointment_edit, name='appointment_edit'),
     path('appointments/<int:pk>/delete/', views.appointment_delete, name='appointment_delete'),

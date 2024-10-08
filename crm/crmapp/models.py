@@ -3,7 +3,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from accounts.models import Area, CustomUser
+from accounts.models import Area, CustomUser, Service
 
 
 CustomUser = get_user_model()
@@ -44,6 +44,7 @@ class Technician(models.Model):
     created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='created_technicians')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    services = models.ManyToManyField(Service, related_name='technicians', blank=True)
     
 
     def __str__(self):

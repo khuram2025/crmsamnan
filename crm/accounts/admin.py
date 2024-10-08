@@ -30,8 +30,8 @@ from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from django.utils.html import escape
 from django.http import Http404
-
-
+from .forms import CustomUserCreationForm, CustomUserChangeForm
+from .models import CustomUser
 
 class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
@@ -45,6 +45,7 @@ class CustomUserAdmin(UserAdmin):
         (_('Personal info'), {'fields': ('first_name', 'last_name')}),
         ('Company Info', {'fields': ('company', 'user_type')}),
         ('Technician Info', {'fields': ('is_technician', 'service_areas')}),
+        ('Manager-Technician Relationship', {'fields': ('managers',)}),
         ('Permissions', {'fields': ('is_staff', 'is_active', 'groups', 'user_permissions')}),
     )
     add_fieldsets = (
@@ -53,9 +54,9 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('mobile', 'email', 'first_name', 'last_name', 'company', 'user_type', 'password1', 'password2', 'is_staff', 'is_active', 'is_technician', 'service_areas')}
         ),
     )
-    search_fields = ('mobile', 'email', 'first_name', 'last_name')
+    filter_horizontal = ('groups', 'user_permissions', 'service_areas', 'managers')
     ordering = ('mobile',)
-    filter_horizontal = ('service_areas',)
+    search_fields = ('mobile', 'first_name', 'last_name', 'email')
 
     def get_full_name(self, obj):
         return obj.get_full_name()
@@ -71,6 +72,22 @@ class CustomUserAdmin(UserAdmin):
             return self.readonly_fields + ('mobile',)
         return self.readonly_fields
 
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if change:
+            # Handle manager-technician relationship
+            if obj.user_type == 'MANAGER':
+                obj.managers.clear()  # A manager can't have managers
+            elif obj.user_type == 'TECHNICIAN':
+                obj.technicians.clear()  # A technician can't have technicians
+            else:
+                obj.managers.clear()
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "managers":
+            kwargs["queryset"] = CustomUser.objects.filter(user_type='MANAGER')
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
     actions = ['reset_password']
 
     def reset_password(self, request, queryset):
@@ -82,14 +99,15 @@ class CustomUserAdmin(UserAdmin):
     reset_password.short_description = "Reset password for selected users"
 
     def get_urls(self):
-        from django.urls import path
-        return [
+        urls = super().get_urls()
+        custom_urls = [
             path(
                 '<id>/password/',
                 self.admin_site.admin_view(self.user_change_password),
                 name='auth_user_password_change',
             ),
-        ] + super().get_urls()
+        ]
+        return custom_urls + urls
 
     def user_change_password(self, request, id, form_url=''):
         user = self.get_object(request, id)

@@ -135,10 +135,28 @@ class TechnicianSchedule(models.Model):
     end_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.technician.name} - {self.schedule.name} ({self.start_date})"
+        return f"{self.technician.name} - {self.schedule.name} ({self.start_date} to {self.end_date or 'ongoing'})"
 
     class Meta:
-        unique_together = ('technician', 'schedule', 'start_date')
+        # Remove the unique_together constraint
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(end_date__gte=models.F('start_date')) | models.Q(end_date__isnull=True),
+                name='end_date_after_start_date'
+            )
+        ]
+    def check_conflicts(self):
+        overlapping_schedules = TechnicianSchedule.objects.filter(
+            technician=self.technician,
+            start_date__lte=self.end_date or datetime.max.date(),
+            end_date__gte=self.start_date
+        ).exclude(pk=self.pk)
+
+        for overlap in overlapping_schedules:
+            if (self.schedule.start_time < overlap.schedule.end_time and
+                self.schedule.end_time > overlap.schedule.start_time):
+                return True
+        return False
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
@@ -148,7 +166,7 @@ class TechnicianSchedule(models.Model):
 
     def generate_slots(self):
         current_date = self.start_date
-        end_date = self.end_date or self.start_date  # If end_date is not set, generate for start_date only
+        end_date = self.end_date or (current_date + timedelta(days=365))  # Generate for a year if no end_date
 
         while current_date <= end_date:
             if self.is_working_day(current_date):

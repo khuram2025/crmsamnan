@@ -193,25 +193,26 @@ def appointment_create(request):
             )
             appointment = form.save(commit=False)
             appointment.customer = customer
-            appointment.technician = form.cleaned_data['technician']  # Ensure technician is set
+            appointment.technician = form.cleaned_data['technician']
             appointment.save()
-            form.save_m2m()  # Save the many-to-many data for the form
-            
-            # Add print statements to verify services
+            form.save_m2m()  # Save many-to-many relationships
+
+            # Debugging statements
             print(f"Appointment ID: {appointment.id}")
-            print(f"Selected Services IDs: {form.cleaned_data['service'].values_list('id', flat=True)}")
-            print(f"Appointment Services: {[service.name for service in appointment.service.all()]}")
-            
+            print(f"Selected Materials IDs: {form.cleaned_data['materials'].values_list('id', flat=True)}")
+            print(f"Appointment Materials: {[material.code for material in appointment.materials.all()]}")
+
             messages.success(request, 'Appointment booked successfully.')
             return redirect('appointment_list')
         else:
             messages.error(request, 'There was an error with your form. Please check the details and try again.')
             print('There was an error with your form. Please check the details and try again.')
-            print(form.errors)  # This line prints form errors to the console
+            print(form.errors)
     else:
         form = AppointmentForm()
 
     return render(request, 'crm/appointment_form.html', {'form': form})
+
 
 @login_required
 def appointment_edit(request, pk):
@@ -227,6 +228,7 @@ def appointment_edit(request, pk):
         'date': appointment.slot.date,
         'slot': appointment.slot.pk,
         'service': [service.pk for service in appointment.service.all()],
+        'materials': [material.pk for material in appointment.materials.all()],
     }
 
     if request.method == 'POST':

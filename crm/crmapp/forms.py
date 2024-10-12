@@ -1,7 +1,7 @@
 # crm/forms.py
 
 from django import forms
-from .models import Customer, Schedule, Slot, Technician, TechnicianSchedule
+from .models import Customer, Schedule, Slot, Technician, TechnicianSchedule, Material
 from accounts.models import CustomUser, Area, Service
 
 class CustomerForm(forms.ModelForm):
@@ -98,10 +98,16 @@ class AppointmentForm(forms.ModelForm):
     name = forms.CharField(max_length=100)
     mobile_number = forms.CharField(max_length=17)
     service = forms.ModelMultipleChoiceField(queryset=Service.objects.all(), required=False)
+    materials = forms.ModelMultipleChoiceField(
+        queryset=Material.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple
+    )
+
 
     class Meta:
         model = Appointment
-        fields = ['city', 'area', 'technician', 'name', 'mobile_number', 'notes', 'date', 'slot', 'service']
+        fields = ['city', 'area', 'technician', 'name', 'mobile_number', 'notes', 'date', 'slot', 'service', 'materials']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

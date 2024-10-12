@@ -180,12 +180,32 @@
               {{ form.notes }}
             </div>
             <div class="form-group">
-              <label for="id_service">Service(s)</label>
-              {{ form.service }}
-            </div>
+    <label for="id_service">Service(s)</label>
+    <select class="form-control" id="id_service" name="service" multiple
+            data-choices data-choices-removeItem data-choices-removeItemButton>
+        {% for service in form.service.field.queryset %}
+            <option value="{{ service.pk }}"
+                    {% if service.pk in form.service.value %}selected{% endif %}>
+                {{ service.name }}
+            </option>
+        {% endfor %}
+    </select>
+</div>
             <div style="display: none;">
                 {{ form.date }} {{ form.slot }}
             </div>
+            <div class="form-group">
+              <label for="id_materials">Materials</label>
+              <select class="form-control" id="id_materials" name="materials" multiple
+                      data-choices data-choices-removeItem data-choices-removeItemButton>
+                  {% for material in form.materials.field.queryset %}
+                      <option value="{{ material.pk }}"
+                              {% if material.pk in form.materials.value %}selected{% endif %}>
+                          {{ material.code }} - {{ material.description }}
+                      </option>
+                  {% endfor %}
+              </select>
+          </div>
           </form>
         </div>
 
@@ -228,7 +248,9 @@
                 <ul id="appointmentSummary" class="appointment-summary"></ul>
               </div>
             </div>
-            <button type="submit" class="btn btn-primary create-appointment-btn" form="appointmentForm">Create Appointment</button>
+           <button type="submit" class="btn btn-primary create-appointment-btn" form="appointmentForm">
+              {% if edit_mode %}Update{% else %}Create{% endif %} Appointment
+            </button>
           </div>
         </div>
       </div>
@@ -488,6 +510,7 @@
       summary += `<li><span class="label">Date:</span> <span class="value">${formatDateForDisplay($("#id_date").val())}</span></li>`;
       summary += `<li><span class="label">Time Slot:</span> <span class="value">${$(".time-slot.selected").text()}</span></li>`;
       summary += `<li><span class="label">Service(s):</span> <span class="value">${$("#id_service option:selected").map(function() { return $(this).text(); }).get().join(", ")}</span></li>`;
+      summary += `<li><span class="label">Materials:</span> <span class="value">${$("#id_materials option:selected").map(function() { return $(this).text(); }).get().join(", ")}</span></li>`;
       summary += `<li><span class="label">Notes:</span> <span class="value">${$("#id_notes").val()}</span></li>`;
       $("#appointmentSummary").html(summary);
     }

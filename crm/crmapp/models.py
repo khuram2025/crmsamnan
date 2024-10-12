@@ -183,6 +183,14 @@ def update_slots(sender, instance, created, **kwargs):
         instance.generate_slots()
 
 
+class Material(models.Model):
+    code = models.CharField(max_length=50, unique=True)
+    description = models.CharField(max_length=255)
+    quantity = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.code} - {self.description}"
+
 class Appointment(models.Model):
     STATUS_CHOICES = (
         ('SCHEDULED', 'Scheduled'),
@@ -198,6 +206,7 @@ class Appointment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     service = models.ManyToManyField(Service, blank=True)
+    materials = models.ManyToManyField(Material, blank=True)
 
 
     def __str__(self):
@@ -222,3 +231,4 @@ class Appointment(models.Model):
 
     class Meta:
         ordering = ['slot__date', 'slot__start_time']
+

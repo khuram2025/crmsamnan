@@ -111,10 +111,22 @@ class AppointmentForm(forms.ModelForm):
                 self.fields['area'].queryset = Area.objects.filter(city_id=city_id)
             except (ValueError, TypeError):
                 pass
+        elif self.initial.get('city'):
+            try:
+                city_id = int(self.initial.get('city'))
+                self.fields['area'].queryset = Area.objects.filter(city_id=city_id)
+            except (ValueError, TypeError):
+                pass
         
         if 'area' in self.data:
             try:
                 area_id = int(self.data.get('area'))
+                self.fields['technician'].queryset = Technician.objects.filter(working_areas__id=area_id)
+            except (ValueError, TypeError):
+                pass
+        elif self.initial.get('area'):
+            try:
+                area_id = int(self.initial.get('area'))
                 self.fields['technician'].queryset = Technician.objects.filter(working_areas__id=area_id)
             except (ValueError, TypeError):
                 pass
@@ -124,6 +136,18 @@ class AppointmentForm(forms.ModelForm):
                 technician_id = int(self.data.get('technician'))
                 date = self.data.get('date')
                 self.fields['slot'].queryset = Slot.objects.filter(technician_id=technician_id, date=date, appointment__isnull=True)
+            except (ValueError, TypeError):
+                pass
+        
+        elif self.initial.get('technician') and self.initial.get('date'):
+            try:
+                technician_id = int(self.initial.get('technician'))
+                date = self.initial.get('date')
+                self.fields['slot'].queryset = Slot.objects.filter(
+                    technician_id=technician_id,
+                    date=date,
+                    appointment__isnull=True
+                )
             except (ValueError, TypeError):
                 pass
 

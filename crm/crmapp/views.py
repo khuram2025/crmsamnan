@@ -192,14 +192,21 @@ def appointment_create(request):
             )
             appointment = form.save(commit=False)
             appointment.customer = customer
+            appointment.technician = form.cleaned_data['technician']  # Ensure technician is set
             appointment.save()
+            form.save_m2m()  # Save the many-to-many data for the form
+            
+            # Add print statements to verify services
+            print(f"Appointment ID: {appointment.id}")
+            print(f"Selected Services IDs: {form.cleaned_data['service'].values_list('id', flat=True)}")
+            print(f"Appointment Services: {[service.name for service in appointment.service.all()]}")
+            
             messages.success(request, 'Appointment booked successfully.')
-            print(request, 'Appointment booked successfully.')
             return redirect('appointment_list')
         else:
             messages.error(request, 'There was an error with your form. Please check the details and try again.')
-            print(request, 'There was an error with your form. Please check the details and try again.')
-            print(form.errors)  # Add this line to print form errors to the console
+            print('There was an error with your form. Please check the details and try again.')
+            print(form.errors)  # This line prints form errors to the console
     else:
         form = AppointmentForm()
 
@@ -218,15 +225,19 @@ def appointment_edit(request, pk):
         initial_data = {
             'city': appointment.slot.technician.working_areas.first().city.pk,
             'area': appointment.slot.technician.working_areas.first().pk,
-            'technician': appointment.slot.technician.user.pk,  # Use the CustomUser's pk
+            'technician': appointment.slot.technician.pk,
             'name': appointment.customer.name,
             'mobile_number': appointment.customer.mobile_number,
             'notes': appointment.notes,
             'date': appointment.slot.date,
             'slot': appointment.slot.pk,
-            
+            'service': [service.pk for service in appointment.service.all()],
         }
+
         form = AppointmentForm(instance=appointment, initial=initial_data)
+    
+    print("Debug: initial_data =", initial_data)
+    print("Debug: form.initial =", form.initial)
     
     context = {
         'form': form,
@@ -235,7 +246,30 @@ def appointment_edit(request, pk):
         'initial_data': initial_data,  # Pass initial data to the template
     }
     return render(request, 'crm/appointment_form.html', context)
+def ajax_load_slots(request):
+    technician_id = request.GET.get('technician_id')
+    date = request.GET.get('date')
+    appointment_id = request.GET.get('appointment_id')  # Add this line
 
+    slots = Slot.objects.filter(technician_id=technician_id, date=date)
+
+    # Include the slot of the current appointment being edited
+    if appointment_id:
+        current_appointment = Appointment.objects.get(id=appointment_id)
+        slots |= Slot.objects.filter(id=current_appointment.slot.id)
+
+    slots = slots.order_by('start_time')
+
+    data = [
+        {
+            'id': slot.id,
+            'start_time': slot.start_time.strftime('%H:%M'),
+            'end_time': slot.end_time.strftime('%H:%M'),
+            'is_booked': slot.appointment_set.exists()
+        }
+        for slot in slots
+    ]
+    return JsonResponse(data, safe=False)
     
 @login_required
 def appointment_delete(request, pk):
@@ -304,16 +338,37 @@ def load_technicians(request):
     ]
     return JsonResponse(technician_list, safe=False)
 
+from django.db.models import Q
+from datetime import datetime
+
 @login_required
 def load_slots(request):
     technician_id = request.GET.get('technician_id')
     date_str = request.GET.get('date')
-    print(f"load_slots called with technician_id: {technician_id}, date: {date_str}")
+    appointment_id = request.GET.get('appointment_id')
+
+    print(f"load_slots called with technician_id: {technician_id}, date: {date_str}, appointment_id: {appointment_id}")
     
     try:
+        # Convert IDs to integers
+        technician_id = int(technician_id)
+        if appointment_id:
+            appointment_id = int(appointment_id)
+        else:
+            appointment_id = None
+
         date = datetime.strptime(date_str, '%Y-%m-%d').date()
         print(f"Parsed date: {date}")
-        slots = Slot.objects.filter(technician_id=technician_id, date=date, appointment__isnull=True).values('id', 'start_time', 'end_time')
+        
+        slots = Slot.objects.filter(technician_id=technician_id, date=date)
+        
+        # Include the current appointment's slot
+        if appointment_id:
+            slots = slots.filter(Q(appointment__isnull=True) | Q(appointment__id=appointment_id))
+        else:
+            slots = slots.filter(appointment__isnull=True)
+        
+        slots = slots.values('id', 'start_time', 'end_time')
         print(f"Found slots: {slots}")
         
         slots_list = list(slots)
@@ -321,11 +376,15 @@ def load_slots(request):
         
         return JsonResponse(slots_list, safe=False)
     except ValueError as e:
-        print(f"Error parsing date: {e}")
-        return JsonResponse({'error': 'Invalid date format'}, status=400)
+        print(f"Error parsing value: {e}")
+        return JsonResponse({'error': 'Invalid value format'}, status=400)
     except Exception as e:
         print(f"Unexpected error in load_slots: {e}")
+        import traceback
+        traceback.print_exc()  # This will print the traceback to your console
         return JsonResponse({'error': 'An unexpected error occurred'}, status=500)
+
+
 
 @login_required
 def get_or_create_customer(request):

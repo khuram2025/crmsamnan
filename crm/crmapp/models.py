@@ -194,6 +194,8 @@ class Appointment(models.Model):
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    service = models.ManyToManyField(Service, blank=True)
+
 
     def __str__(self):
         return f"{self.customer.name} - {self.slot}"

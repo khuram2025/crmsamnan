@@ -243,6 +243,25 @@
     const timeSlots = document.getElementById("time-slots");
     let currentDate = new Date();
 
+    let selectedDate = null;
+    let slotId = null;
+    let services = [];
+
+    // Pre-select values if in edit mode
+    {% if edit_mode %}
+      var cityId = "{{ initial_data.city }}";
+      var areaId = "{{ initial_data.area }}";
+      var technicianId = "{{ initial_data.technician }}";
+      var date = "{{ initial_data.date|date:'Y-m-d' }}";
+      slotId = parseInt("{{ initial_data.slot }}", 10);
+      services = {{ initial_data.service|safe }};
+      // Convert service IDs to integers
+      services = services.map(function(item) { return parseInt(item, 10); });
+      selectedDate = date;
+      currentDate = new Date(date);
+    {% endif %}
+
+
     function generateCalendar(year, month) {
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
@@ -265,9 +284,12 @@
               cell.classList.add("has-slots");
               cell.addEventListener("click", (event) => {
                 const clickedDate = new Date(year, month, parseInt(event.target.textContent));
-                console.log(`Clicked date: ${formatDate(clickedDate)}`); // Debug log
                 selectDate(clickedDate);
               });
+              if (selectedDate && formatDate(date) === selectedDate) {
+                cell.classList.add("selected");
+                document.getElementById("id_date").value = formatDate(date);
+              }
             }
           }
           date.setDate(date.getDate() + 1);
@@ -297,57 +319,17 @@
 
       const formattedDate = formatDate(date);
       document.getElementById("id_date").value = formattedDate;
-      console.log(`Date selected from calendar: ${formattedDate}`); // Debug log
+      selectedDate = formattedDate;
       loadTimeSlots(formattedDate);
     }
 
-    function loadTimeSlots(date) {
-      const technicianId = document.getElementById("id_technician").value;
-      if (!technicianId) {
-        console.log("No technician selected"); // Debug log
-        alert("Please select a technician first.");
-        return;
-      }
-
-      console.log(`Loading time slots for technician ${technicianId} on ${date}`); // Debug log
-
-      $.ajax({
-        url: '{% url "ajax_load_slots" %}',
-        data: {
-          technician_id: technicianId,
-          date: date,
-        },
-        success: function (data) {
-          console.log("Received slots data:", data); // Debug log
-          timeSlots.innerHTML = "<h3>Available Time Slots</h3>";
-          const slotsContainer = document.createElement("div");
-          if (Array.isArray(data) && data.length > 0) {
-            data.forEach(function (slot) {
-              const button = document.createElement("button");
-              button.textContent = `${slot.start_time} - ${slot.end_time}`;
-              button.classList.add("time-slot");
-              button.addEventListener("click", () => selectTimeSlot(slot.id, button.textContent));
-              slotsContainer.appendChild(button);
-            });
-          } else {
-            slotsContainer.textContent = "No available slots for this date.";
-          }
-          timeSlots.appendChild(slotsContainer);
-          timeSlots.style.display = "block";
-        },
-        error: function (xhr, status, error) {
-          console.error("AJAX error:", status, error); // Debug log
-          console.error("Response Text:", xhr.responseText); // Debug log
-        },
-      });
-    }
-
-    function selectTimeSlot(slotId, slotText) {
+    function selectTimeSlot(slotIdValue, slotText) {
+      console.log("selectTimeSlot called with slotIdValue:", slotIdValue);
       const slotSelect = document.getElementById("id_slot");
 
       // Create a new option
       const option = document.createElement("option");
-      option.value = slotId;
+      option.value = slotIdValue;
       option.text = slotText;
       option.selected = true;
 
@@ -361,29 +343,26 @@
       if (selectedSlot) {
         selectedSlot.classList.remove("selected");
       }
-      event.target.classList.add("selected");
+      $(`.time-slot[data-slot-id='${slotIdValue}']`).addClass('selected');
       updateSummary();
-      console.log(`Selected slot ID: ${slotId}`); // Debug log
     }
 
     function loadTimeSlots(date) {
-      const technicianId = document.getElementById("id_technician").value;
-      if (!technicianId) {
-        console.log("No technician selected"); // Debug log
-        alert("Please select a technician first.");
-        return;
-      }
+      const technicianId = $("#id_technician").val();
+      if (!technicianId) return;
+      const data = { technician_id: technicianId, date: date };
 
-      console.log(`Loading time slots for technician ${technicianId} on ${date}`); // Debug log
 
+      console.log("Loading time slots for technicianId:", technicianId, "date:", date);
+
+      {% if edit_mode %}
+        data.appointment_id = "{{ appointment.id }}";
+      {% endif %}
       $.ajax({
         url: '{% url "ajax_load_slots" %}',
-        data: {
-          technician_id: technicianId,
-          date: date,
-        },
+        data: data,
         success: function (data) {
-          console.log("Received slots data:", data); // Debug log
+          console.log("Received time slots data:", data);
           timeSlots.innerHTML = "<h3>Available Time Slots</h3>";
           const slotsContainer = document.createElement("div");
           if (Array.isArray(data) && data.length > 0) {
@@ -391,79 +370,79 @@
               const button = document.createElement("button");
               button.textContent = `${slot.start_time} - ${slot.end_time}`;
               button.classList.add("time-slot");
+              button.dataset.slotId = slot.id;
               button.addEventListener("click", () => selectTimeSlot(slot.id, button.textContent));
               slotsContainer.appendChild(button);
+
+              console.log("Comparing slotId:", slotId, "with slot.id:", slot.id);
+
+              // Ensure both IDs are numbers for comparison
+              if (slotId && parseInt(slotId, 10) === parseInt(slot.id, 10)) {
+                console.log("Preselecting slot with ID:", slot.id);
+                button.classList.add("selected");
+                selectTimeSlot(slot.id, button.textContent);
+                slotId = null; // Reset after selecting
+              }
             });
           } else {
             slotsContainer.textContent = "No available slots for this date.";
           }
+          timeSlots.innerHTML = '';
           timeSlots.appendChild(slotsContainer);
           timeSlots.style.display = "block";
-        },
-        error: function (xhr, status, error) {
-          console.error("AJAX error:", status, error); // Debug log
-          console.error("Response Text:", xhr.responseText); // Debug log
+          updateSummary();
         },
       });
     }
-    generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
-
-    document.querySelector(".prev").addEventListener("click", () => {
-      currentDate.setMonth(currentDate.getMonth() - 1);
-      generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
-    });
-
-    document.querySelector(".next").addEventListener("click", () => {
-      currentDate.setMonth(currentDate.getMonth() + 1);
-      generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
-    });
 
     $("#id_city").change(function () {
       var cityId = $(this).val();
-      console.log("Selected city ID:", cityId);
       $.ajax({
         url: '{% url "ajax_load_areas" %}',
         data: {
           city_id: cityId,
         },
         success: function (data) {
-          console.log("Received areas data:", data);
           $("#id_area").html('<option value="">Select an area</option>');
           $.each(data, function (index, item) {
             $("#id_area").append($("<option></option>").val(item.id).html(item.name));
           });
           $("#id_technician").html('<option value="">Select a technician</option>');
-        },
-        error: function (xhr, status, error) {
-          console.error("AJAX error:", status, error);
-          console.error("Response Text:", xhr.responseText);
+
+          if (typeof areaId !== 'undefined' && areaId) {
+            $("#id_area").val(areaId).trigger('change');
+            areaId = null; // Reset so it doesn't interfere with future changes
+          }
         },
       });
     });
 
     $("#id_area").change(function () {
-      var areaId = $(this).val();
+      var areaIdValue = $(this).val();
       $.ajax({
         url: '{% url "ajax_load_technicians" %}',
         data: {
-          area_id: areaId,
+          area_id: areaIdValue,
         },
         success: function (data) {
           $("#id_technician").html('<option value="">Select a technician</option>');
           $.each(data, function (index, item) {
             $("#id_technician").append($("<option></option>").val(item.id).html(item.name));
           });
+          if (typeof technicianId !== 'undefined' && technicianId) {
+            $("#id_technician").val(technicianId).trigger('change');
+            technicianId = null; // Reset so it doesn't interfere with future changes
+          }
         },
       });
     });
 
-    $("#id_technician").change(function () {
-      var technicianId = $(this).val();
-      if (technicianId) {
-        loadTechnicianServices(technicianId);
-        var selectedDate = $("#id_date").val();
+     $("#id_technician").change(function () {
+      var technicianIdValue = $(this).val();
+      if (technicianIdValue) {
+        loadTechnicianServices(technicianIdValue);
         if (selectedDate) {
-          loadTimeSlots(new Date(selectedDate));
+          loadTimeSlots(selectedDate);
         }
       } else {
         $("#id_service").html('<option value="">Select a technician first</option>');
@@ -471,6 +450,8 @@
     });
 
     function loadTechnicianServices(technicianId) {
+      console.log("Loading services for technicianId:", technicianId);
+
       $.ajax({
         url: '{% url "ajax_load_technician_services" %}',
         data: {
@@ -481,18 +462,22 @@
           $("#id_service").html('');
           if (Array.isArray(data) && data.length > 0) {
             $.each(data, function (index, service) {
-              $("#id_service").append($("<option></option>").val(service.id).html(service.name));
+              // Ensure the value is a number
+              $("#id_service").append($("<option></option>").val(parseInt(service.id, 10)).html(service.name));
             });
+            if (services && services.length > 0) {
+              console.log("Preselecting services:", services);
+              $("#id_service").val(services);
+              services = []; // Reset
+            }
           } else {
             $("#id_service").html('<option value="">No services available for this technician</option>');
           }
-        },
-        error: function (xhr, status, error) {
-          console.error("AJAX error:", status, error);
-          console.error("Response Text:", xhr.responseText);
+          updateSummary();
         },
       });
     }
+
 
     function updateSummary() {
       var summary = "";
@@ -516,46 +501,32 @@
 
     $("#appointmentForm").change(updateSummary);
 
-    // Pre-select values if in edit mode
-    {% if edit_mode %}
-      var cityId = "{{ initial_data.city }}";
-      var areaId = "{{ initial_data.area }}";
-      var technicianId = "{{ initial_data.technician }}";
-      var date = "{{ initial_data.date|date:'Y-m-d' }}";
-      var slotId = "{{ initial_data.slot }}";
-      var services = {{ initial_data.service|safe }};
+    // Initialize the calendar
+    generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
 
+    document.querySelector(".prev").addEventListener("click", () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    });
+
+    document.querySelector(".next").addEventListener("click", () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    });
+
+    // If in edit mode, trigger the change events to pre-select the values
+    {% if edit_mode %}
+      console.log("Edit mode detected. Preselecting values.");
+      console.log("cityId:", cityId);
+      console.log("areaId:", areaId);
+      console.log("technicianId:", technicianId);
+      console.log("date:", date);
+      console.log("slotId:", slotId);
+      console.log("services:", services);
       $("#id_city").val(cityId).trigger('change');
-      
-      // Use setTimeout to ensure area options are loaded before selecting
-      setTimeout(function() {
-        $("#id_area").val(areaId).trigger('change');
-        
-        // Use another setTimeout for technician selection
-        setTimeout(function() {
-          $("#id_technician").val(technicianId).trigger('change');
-          
-          // Load time slots for the selected date
-          loadTimeSlots(date);
-          
-          // Pre-select the time slot
-          setTimeout(function() {
-            $(".time-slot").each(function() {
-              if ($(this).data('slot-id') == slotId) {
-                $(this).addClass('selected');
-              }
-            });
-          }, 500);
-          
-          // Pre-select services
-          $("#id_service").val(services);
-          
-          // Update the summary
-          updateSummary();
-        }, 500);
-      }, 500);
     {% endif %}
 
   });
 </script>
+
 {% endblock extra_js %}

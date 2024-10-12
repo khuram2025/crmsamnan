@@ -87,6 +87,7 @@ class TechnicianScheduleForm(forms.ModelForm):
 from django import forms
 from .models import Appointment, Technician, Slot
 from accounts.models import City, Area
+from django.db.models import Q 
 
 class AppointmentForm(forms.ModelForm):
     city = forms.ModelChoiceField(queryset=City.objects.all(), empty_label="Select a city")
@@ -104,6 +105,11 @@ class AppointmentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Get the current slot ID if editing an existing appointment
+        current_slot_id = None
+        if self.instance.pk:
+            current_slot_id = self.instance.slot.pk
         
         if 'city' in self.data:
             try:
@@ -135,19 +141,24 @@ class AppointmentForm(forms.ModelForm):
             try:
                 technician_id = int(self.data.get('technician'))
                 date = self.data.get('date')
-                self.fields['slot'].queryset = Slot.objects.filter(technician_id=technician_id, date=date, appointment__isnull=True)
+                slots = Slot.objects.filter(technician_id=technician_id, date=date)
+                if current_slot_id:
+                    slots = slots.filter(Q(appointment__isnull=True) | Q(pk=current_slot_id))
+                else:
+                    slots = slots.filter(appointment__isnull=True)
+                self.fields['slot'].queryset = slots
             except (ValueError, TypeError):
                 pass
-        
         elif self.initial.get('technician') and self.initial.get('date'):
             try:
                 technician_id = int(self.initial.get('technician'))
                 date = self.initial.get('date')
-                self.fields['slot'].queryset = Slot.objects.filter(
-                    technician_id=technician_id,
-                    date=date,
-                    appointment__isnull=True
-                )
+                slots = Slot.objects.filter(technician_id=technician_id, date=date)
+                if current_slot_id:
+                    slots = slots.filter(Q(appointment__isnull=True) | Q(pk=current_slot_id))
+                else:
+                    slots = slots.filter(appointment__isnull=True)
+                self.fields['slot'].queryset = slots
             except (ValueError, TypeError):
                 pass
 
@@ -156,6 +167,9 @@ class AppointmentForm(forms.ModelForm):
         technician = cleaned_data.get('technician')
         date = cleaned_data.get('date')
         slot = cleaned_data.get('slot')
+
+        print(f"Debug - Clean method: technician={technician}, date={date}, slot={slot}")
+        print(f"Debug - Current instance: {self.instance.pk}")
 
         if not all([technician, date, slot]):
             raise forms.ValidationError("Please select a technician, date, and time slot.")
@@ -166,7 +180,28 @@ class AppointmentForm(forms.ModelForm):
         if slot and slot.date != date:
             raise forms.ValidationError("The selected slot is not for the chosen date.")
 
+        # Check if the slot is booked
+        if slot:
+            print(f"Debug - Slot: {slot}")
+            print(f"Debug - Slot is_booked: {slot.is_booked()}")
+            slot_appointment = getattr(slot, 'appointment', None)
+            print(f"Debug - Slot appointment: {slot_appointment}")
+            
+            # If we're editing an existing appointment
+            if self.instance.pk:
+                print(f"Debug - Editing existing appointment: {self.instance.pk}")
+                # If the slot is booked by another appointment
+                if slot.is_booked() and slot_appointment and slot_appointment.pk != self.instance.pk:
+                    raise forms.ValidationError("This slot is already booked by another appointment.")
+            else:
+                if slot.is_booked():
+                    raise forms.ValidationError("This slot is already booked.")
+
         return cleaned_data
+
+
+
+
 
 class AddTeamMemberForm(forms.ModelForm):
     class Meta:

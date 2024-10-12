@@ -112,12 +112,15 @@ class Slot(models.Model):
     class Meta:
         unique_together = ('schedule', 'date', 'start_time', 'end_time')
 
-    def __str__(self):
-        technician_name = self.technician.name if self.technician else "Unassigned"
-        return f"{technician_name}: {self.date} {self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
 
     def is_booked(self):
-        return Appointment.objects.filter(slot=self).exists()
+        try:
+            return self.appointment is not None
+        except Slot.appointment.RelatedObjectDoesNotExist:
+            return False
+
+    def __str__(self):
+        return f"{self.technician}: {self.date} {self.start_time} - {self.end_time}"
 # crm/models.py
 
 from django.db import models
@@ -202,7 +205,8 @@ class Appointment(models.Model):
 
     def clean(self):
         if self.slot.is_booked():
-            raise ValidationError("This slot is already booked.")
+            if self.slot.appointment and self.slot.appointment.pk != self.pk:
+                raise ValidationError("This slot is already booked.")
 
     def save(self, *args, **kwargs):
         self.full_clean()

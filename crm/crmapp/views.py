@@ -17,6 +17,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Schedule, TechnicianSchedule, Slot
+from django.db.models import Q 
 from .forms import ScheduleForm, TechnicianScheduleForm
 from datetime import datetime, timedelta
 CustomUser = get_user_model()
@@ -215,62 +216,60 @@ def appointment_create(request):
 @login_required
 def appointment_edit(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)
+
+    initial_data = {
+        'city': appointment.slot.technician.working_areas.first().city.pk,
+        'area': appointment.slot.technician.working_areas.first().pk,
+        'technician': appointment.slot.technician.pk,
+        'name': appointment.customer.name,
+        'mobile_number': appointment.customer.mobile_number,
+        'notes': appointment.notes,
+        'date': appointment.slot.date,
+        'slot': appointment.slot.pk,
+        'service': [service.pk for service in appointment.service.all()],
+    }
+
     if request.method == 'POST':
         form = AppointmentForm(request.POST, instance=appointment)
+        print(f"Debug - POST data: {request.POST}")
         if form.is_valid():
-            form.save()
+            print("Debug - Form is valid")
+            # Update the customer information
+            name = form.cleaned_data['name']
+            mobile_number = form.cleaned_data['mobile_number']
+            customer = appointment.customer
+            customer.name = name
+            customer.mobile_number = mobile_number
+            customer.save()
+
+            # Save the appointment instance without committing (to handle many-to-many)
+            appointment = form.save(commit=False)
+            appointment.customer = customer  # Ensure the customer is set
+            appointment.save()
+            form.save_m2m()  # Save many-to-many relationships (services)
+
             messages.success(request, 'Appointment updated successfully.')
             return redirect('appointment_list')
+        else:
+            print('Debug - Form is invalid:', form.errors)
     else:
-        initial_data = {
-            'city': appointment.slot.technician.working_areas.first().city.pk,
-            'area': appointment.slot.technician.working_areas.first().pk,
-            'technician': appointment.slot.technician.pk,
-            'name': appointment.customer.name,
-            'mobile_number': appointment.customer.mobile_number,
-            'notes': appointment.notes,
-            'date': appointment.slot.date,
-            'slot': appointment.slot.pk,
-            'service': [service.pk for service in appointment.service.all()],
-        }
-
         form = AppointmentForm(instance=appointment, initial=initial_data)
-    
-    print("Debug: initial_data =", initial_data)
-    print("Debug: form.initial =", form.initial)
-    
+
+    print(f"Debug - Initial data: {initial_data}")
+    print(f"Debug - Form initial: {form.initial}")
+
     context = {
         'form': form,
         'appointment': appointment,
         'edit_mode': True,
-        'initial_data': initial_data,  # Pass initial data to the template
+        'initial_data': initial_data,
     }
     return render(request, 'crm/appointment_form.html', context)
-def ajax_load_slots(request):
-    technician_id = request.GET.get('technician_id')
-    date = request.GET.get('date')
-    appointment_id = request.GET.get('appointment_id')  # Add this line
 
-    slots = Slot.objects.filter(technician_id=technician_id, date=date)
 
-    # Include the slot of the current appointment being edited
-    if appointment_id:
-        current_appointment = Appointment.objects.get(id=appointment_id)
-        slots |= Slot.objects.filter(id=current_appointment.slot.id)
 
-    slots = slots.order_by('start_time')
 
-    data = [
-        {
-            'id': slot.id,
-            'start_time': slot.start_time.strftime('%H:%M'),
-            'end_time': slot.end_time.strftime('%H:%M'),
-            'is_booked': slot.appointment_set.exists()
-        }
-        for slot in slots
-    ]
-    return JsonResponse(data, safe=False)
-    
+
 @login_required
 def appointment_delete(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)

@@ -1,7 +1,7 @@
 # crm/admin.py
 
 from django.contrib import admin
-from .models import CustomUser, Customer, Technician
+from .models import CustomUser, Customer, Technician, TechnicianSchedule
 from accounts.models import City, Area, Service
 
 @admin.register(Customer)
@@ -28,7 +28,12 @@ class CustomerAdmin(admin.ModelAdmin):
             obj.save()
             self.message_user(request, f"Customer account created with temporary password: {password}")
             
-
+class TechnicianScheduleInline(admin.TabularInline):
+    model = TechnicianSchedule
+    extra = 1  # Number of extra forms to display
+    autocomplete_fields = ['schedule']
+    # Optionally, you can add fields to display in the inline
+    fields = ('schedule', 'start_date', 'end_date')
 
 @admin.register(Technician)
 class TechnicianAdmin(admin.ModelAdmin):
@@ -37,7 +42,7 @@ class TechnicianAdmin(admin.ModelAdmin):
     search_fields = ('user__first_name', 'user__last_name', 'technician_id', 'user__mobile', 'working_areas__name', 'services__name')
     readonly_fields = ('created_by', 'created_at', 'updated_at')
     filter_horizontal = ('working_areas', 'services')
-
+    inlines = [TechnicianScheduleInline]
     def get_full_name(self, obj):
         return obj.user.get_full_name()
     get_full_name.short_description = 'Name'

@@ -3,7 +3,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model
 from django.contrib import messages
-
+from django.utils import timezone
 from accounts.models import Area
 from .models import Customer
 from .forms import CustomerForm
@@ -164,19 +164,53 @@ from django.http import JsonResponse
 
 @login_required
 def appointment_list(request):
+    today = timezone.now().date()
+    time_period = request.GET.get('time_period', '7d')  # Default to 7 days
+    custom_date_range = request.GET.get('custom_date')
+
+    if custom_date_range:
+        start_date, end_date = custom_date_range.split(' to ')
+        start_date = timezone.datetime.strptime(start_date, '%d %b, %Y').date()
+        end_date = timezone.datetime.strptime(end_date, '%d %b, %Y').date()
+    else:
+        if time_period == 'today':
+            start_date = today
+            end_date = today
+        elif time_period == '7d':
+            start_date = today
+            end_date = today + timedelta(days=7)
+        elif time_period == '1m':
+            start_date = today
+            end_date = today + timedelta(days=30)
+        elif time_period == '6m':
+            start_date = today
+            end_date = today + timedelta(days=180)
+        elif time_period == '1y':
+            start_date = today
+            end_date = today + timedelta(days=365)
+        else:
+            start_date = today
+            end_date = today + timedelta(days=7)  # Default to 7 days
+
     appointments = Appointment.objects.select_related(
         'slot', 
         'customer', 
         'slot__technician', 
         'slot__technician__user',
         'customer__user'
+    ).prefetch_related(
+        'service',
+        'materials'
+    ).filter(
+        slot__date__gte=start_date,
+        slot__date__lte=end_date
     ).order_by('slot__date', 'slot__start_time')
-    
-
     
     context = {
         'appointments': appointments,
         'appointment_count': appointments.count(),
+        'time_period': time_period,
+        'custom_date_range': custom_date_range,
     }
     return render(request, 'crm/appointment_list.html', context)
 

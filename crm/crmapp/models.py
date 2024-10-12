@@ -120,6 +120,8 @@ class Slot(models.Model):
             return False
 
     def __str__(self):
+        technician_name = self.technician.name if self.technician else "Unassigned"
+
         return f"{self.technician}: {self.date} {self.start_time} - {self.end_time}"
 # crm/models.py
 
@@ -191,6 +193,8 @@ class TechnicianSchedule(models.Model):
                 end_time=(start_time + slot_duration).time()
             )
             start_time += slot_duration
+    def __str__(self):
+        return f"{self.technician.name} - {self.schedule.name} ({self.start_date} to {self.end_date or 'ongoing'})"
 
 @receiver(post_save, sender=TechnicianSchedule)
 def update_slots(sender, instance, created, **kwargs):
@@ -223,8 +227,8 @@ class Appointment(models.Model):
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    service = models.ManyToManyField(Service, blank=True)
-    materials = models.ManyToManyField(Material, blank=True)
+    service = models.ManyToManyField(Service, related_name='appointments', blank=True)
+    materials = models.ManyToManyField(Material, related_name='appointments', blank=True)
 
 
     def __str__(self):
@@ -250,3 +254,8 @@ class Appointment(models.Model):
     class Meta:
         ordering = ['slot__date', 'slot__start_time']
 
+    def get_services(self):
+        return ", ".join([service.name for service in self.service.all()])
+
+    def get_materials(self):
+        return ", ".join([f"{material.code} - {material.description}" for material in self.materials.all()])

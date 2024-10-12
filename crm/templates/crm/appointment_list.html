@@ -1,6 +1,4 @@
-{% extends 'partials/base.html' %}
-
-{% block content %}
+{% extends 'partials/base.html' %} {% block content %}
 <div class="main-content">
   <div class="page-content">
     <div class="container-fluid">
@@ -8,20 +6,45 @@
         <div class="col-lg-12">
           <div class="card">
             <div class="card-header">
-              <h4 class="card-title mb-0 flex-grow-1">Upcoming Appointments</h4>
+              <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <h4 class="card-title mb-0 me-2">Upcoming Appointments</h4>
+                <a href="{% url 'appointment_create' %}" class="btn btn-primary waves-effect waves-light me-3">Create Appointment</a>
+                <form id="timePeriodForm" action="{% url 'appointment_list' %}" method="GET" class="d-flex align-items-center flex-grow-1 justify-content-end">
+                  <div class="me-2">
+                    <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm {% if time_period == 'today' %}active{% endif %}" data-period="today">Today</button>
+                    <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm {% if time_period == '7d' %}active{% endif %}" data-period="7d">7D</button>
+                    <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm {% if time_period == '1m' %}active{% endif %}" data-period="1m">1M</button>
+                    <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm {% if time_period == '6m' %}active{% endif %}" data-period="6m">6M</button>
+                    <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm {% if time_period == '1y' %}active{% endif %}" data-period="1y">1Y</button>
+                  </div>
+                  <div class="input-group me-2" style="width: auto">
+                    <input type="text" class="form-control border-0 minimal-border dash-filter-picker shadow flatpickr-input" name="custom_date" id="customDateInput" data-provider="flatpickr" data-range-date="true" data-date-format="d M, Y" placeholder="Select custom date range" value="{{ custom_date_range }}" readonly="readonly" />
+                    <div class="input-group-text bg-primary border-primary text-white">
+                      <i class="ri-calendar-2-line"></i>
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn-soft-info btn-icon waves-effect waves-light material-shadow-none layout-rightside-btn">
+                    <i class="ri-pulse-line"></i>
+                  </button>
+                  <input type="hidden" name="time_period" id="timePeriodInput" value="{{ time_period }}" />
+                </form>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="row">
         <div class="col-xxl-9">
           <div class="card">
             <div class="card-body">
               <table class="table" id="appointment-table">
                 <thead>
                   <tr>
-                     <th>Date</th>
+                    <th>Date</th>
                     <th>Customers</th>
                     <th>Technician</th>
-                   
+
                     <th>Time</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -29,37 +52,37 @@
                 </thead>
                 <tbody>
                   {% for appointment in appointments %}
-                    <tr data-appointment-id="{{ appointment.id }}" class="{% if forloop.first %}selected{% endif %}">
-                      <td><div class="avatar-sm p-1 py-2 h-auto bg-light rounded-3 material-shadow">
-    <div class="text-center">
-        <h5 class="mb-0">{{ appointment.slot.date|date:"d" }}</h5>
-        <div class="text-muted">{{ appointment.slot.date|date:"M" }}</div>
-        
-    </div>
-</div></td>
-                      <td>
-                        {{ appointment.customer.name }}
-                        <br>
-                        {{ appointment.customer.mobile_number }}
-                      </td>
-                      <td>
-                        {{ appointment.slot.technician.name }}
-                        <br>
-                        ID: {{ appointment.slot.technician.technician_id }}
-                      </td>
-                      
-                      <td class="text-muted mt-0 mb-1 fs-13">{{ appointment.slot.start_time|time:"H:i" }} - {{ appointment.slot.end_time|time:"H:i" }}</td>
-                      <td>{{ appointment.get_status_display }}</td>
-                      <td>
-        <a href="{% url 'appointment_edit' appointment.pk %}" class="btn btn-sm btn-secondary">Edit</a>
-        <a href="{% url 'appointment_delete' appointment.pk %}" class="btn btn-sm btn-danger">Delete</a>
-      </td>
+                  <tr data-appointment-id="{{ appointment.id }}" data-customer-name="{{ appointment.customer.name }}" data-customer-mobile="{{ appointment.customer.mobile_number }}" data-technician-name="{{ appointment.slot.technician.name }}" data-technician-id="{{ appointment.slot.technician.technician_id }}" data-date="{{ appointment.slot.date|date:'M d, Y' }}" data-time="{{ appointment.slot.start_time|time:'H:i' }} - {{ appointment.slot.end_time|time:'H:i' }}" data-status="{{ appointment.get_status_display }}" data-notes="{{ appointment.notes|default:'No notes available' }}" data-services="{{ appointment.get_services }}" data-materials="{{ appointment.get_materials }}" class="{% if forloop.first %}selected{% endif %} cursor-pointer">
+                    <td>
+                      <div class="avatar-sm p-1 py-2 h-auto bg-light rounded-3 material-shadow">
+                        <div class="text-center">
+                          <h5 class="mb-0">{{ appointment.slot.date|date:"d" }}</h5>
+                          <div class="text-muted">{{ appointment.slot.date|date:"M" }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      {{ appointment.customer.name }}
+                      <br />
+                      {{ appointment.customer.mobile_number }}
+                    </td>
+                    <td>
+                      {{ appointment.slot.technician.name }}
+                      <br />
+                      ID: {{ appointment.slot.technician.technician_id }}
+                    </td>
 
-                    </tr>
+                    <td class="text-muted mt-0 mb-1 fs-13">{{ appointment.slot.start_time|time:"H:i" }} - {{ appointment.slot.end_time|time:"H:i" }}</td>
+                    <td>{{ appointment.get_status_display }}</td>
+                    <td>
+                      <a href="{% url 'appointment_edit' appointment.pk %}" class="btn btn-sm btn-primary">Edit</a>
+                      <a href="{% url 'appointment_delete' appointment.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                    </td>
+                  </tr>
                   {% empty %}
-                    <tr>
-                      <td colspan="6">No appointments found.</td>
-                    </tr>
+                  <tr>
+                    <td colspan="6">No appointments found.</td>
+                  </tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -70,61 +93,69 @@
         <div class="col-xxl-3">
           <div class="card" id="appointment-detail">
             {% with selected_appointment=appointments.first %}
-              <div class="card-body text-center">
-                <div class="position-relative d-inline-block">
-                  <img src="{{ selected_appointment.customer.profile_image.url|default:'assets/images/users/avatar-default.jpg' }}" alt="" class="avatar-lg rounded-circle img-thumbnail material-shadow">
-                  <span class="contact-active position-absolute rounded-circle bg-success"><span class="visually-hidden"></span></span>
-                </div>
-                <h5 class="mt-4 mb-1">{{ selected_appointment.customer.name }}</h5>
-                <p class="text-muted">{{ selected_appointment.customer.mobile_number }}</p>
+            <div class="card-body text-center">
+              <div class="position-relative d-inline-block">
+                <img src="{{ selected_appointment.customer.profile_image.url|default:'assets/images/users/avatar-default.jpg' }}" alt="" class="avatar-lg rounded-circle img-thumbnail material-shadow" />
+                <span class="contact-active position-absolute rounded-circle bg-success"><span class="visually-hidden"></span></span>
+              </div>
+              <h5 class="mt-4 mb-1">{{ selected_appointment.customer.name }}</h5>
+              <p class="text-muted">{{ selected_appointment.customer.mobile_number }}</p>
 
-                <ul class="list-inline mb-0">
-                  <li class="list-inline-item avatar-xs">
-                    <a href="tel:{{ selected_appointment.customer.mobile_number }}" class="avatar-title bg-success-subtle text-success fs-15 rounded">
-                      <i class="ri-phone-line"></i>
-                    </a>
-                  </li>
-                  <li class="list-inline-item avatar-xs">
-                    <a href="mailto:{{ selected_appointment.customer.email }}" class="avatar-title bg-danger-subtle text-danger fs-15 rounded">
-                      <i class="ri-mail-line"></i>
-                    </a>
-                  </li>
-                  <li class="list-inline-item avatar-xs">
-                    <a href="javascript:void(0);" class="avatar-title bg-warning-subtle text-warning fs-15 rounded">
-                      <i class="ri-question-answer-line"></i>
-                    </a>
-                  </li>
-                </ul>
+              <ul class="list-inline mb-0">
+                <li class="list-inline-item avatar-xs">
+                  <a href="tel:{{ selected_appointment.customer.mobile_number }}" class="avatar-title bg-success-subtle text-success fs-15 rounded">
+                    <i class="ri-phone-line"></i>
+                  </a>
+                </li>
+                <li class="list-inline-item avatar-xs">
+                  <a href="mailto:{{ selected_appointment.customer.email }}" class="avatar-title bg-danger-subtle text-danger fs-15 rounded">
+                    <i class="ri-mail-line"></i>
+                  </a>
+                </li>
+                <li class="list-inline-item avatar-xs">
+                  <a href="javascript:void(0);" class="avatar-title bg-warning-subtle text-warning fs-15 rounded">
+                    <i class="ri-question-answer-line"></i>
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div class="card-body">
+              <h6 class="text-muted text-uppercase fw-semibold mb-3">Appointment Information</h6>
+              <div class="table-responsive table-card">
+                <table class="table table-borderless mb-0">
+                  <tbody>
+                    <tr>
+                      <td class="fw-medium" scope="row">Technician</td>
+                      <td>{{ selected_appointment.slot.technician.name }}</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-medium" scope="row">Date</td>
+                      <td>{{ selected_appointment.slot.date|date:"M d, Y" }}</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-medium" scope="row">Time</td>
+                      <td>{{ selected_appointment.slot.start_time|time:"H:i" }} - {{ selected_appointment.slot.end_time|time:"H:i" }}</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-medium" scope="row">Status</td>
+                      <td>{{ selected_appointment.get_status_display }}</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-medium" scope="row">Notes</td>
+                      <td>{{ selected_appointment.notes|default:"No notes available" }}</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-medium" scope="row">Services</td>
+                      <td>{{ selected_appointment.get_services }}</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-medium" scope="row">Materials</td>
+                      <td>{{ selected_appointment.get_materials }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div class="card-body">
-                <h6 class="text-muted text-uppercase fw-semibold mb-3">Appointment Information</h6>
-                <div class="table-responsive table-card">
-                  <table class="table table-borderless mb-0">
-                    <tbody>
-                      <tr>
-                        <td class="fw-medium" scope="row">Technician</td>
-                        <td>{{ selected_appointment.slot.technician.name }}</td>
-                      </tr>
-                      <tr>
-                        <td class="fw-medium" scope="row">Date</td>
-                        <td>{{ selected_appointment.slot.date|date:"M d, Y" }}</td>
-                      </tr>
-                      <tr>
-                        <td class="fw-medium" scope="row">Time</td>
-                        <td>{{ selected_appointment.slot.start_time|time:"H:i" }} - {{ selected_appointment.slot.end_time|time:"H:i" }}</td>
-                      </tr>
-                      <tr>
-                        <td class="fw-medium" scope="row">Status</td>
-                        <td>{{ selected_appointment.get_status_display }}</td>
-                      </tr>
-                      <tr>
-                        <td class="fw-medium" scope="row">Notes</td>
-                        <td>{{ selected_appointment.notes|default:"No notes available" }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            </div>
             {% endwith %}
           </div>
         </div>
@@ -134,41 +165,94 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const appointmentTable = document.getElementById('appointment-table');
-  const appointmentDetail = document.getElementById('appointment-detail');
+  document.addEventListener("DOMContentLoaded", function () {
+    const appointmentTable = document.getElementById("appointment-table");
+    const appointmentDetail = document.getElementById("appointment-detail");
 
-  appointmentTable.addEventListener('click', function(e) {
-    const row = e.target.closest('tr');
-    if (row) {
-      const appointmentId = row.dataset.appointmentId;
-      // Remove 'selected' class from all rows
-      appointmentTable.querySelectorAll('tr').forEach(tr => tr.classList.remove('selected'));
-      // Add 'selected' class to clicked row
-      row.classList.add('selected');
-      // Fetch appointment details and update the detail card
-      fetchAppointmentDetails(appointmentId);
+    appointmentTable.addEventListener("click", function (e) {
+      const row = e.target.closest("tr");
+      if (row) {
+        // Remove 'selected' class from all rows
+        appointmentTable.querySelectorAll("tr").forEach((tr) => tr.classList.remove("selected"));
+        // Add 'selected' class to clicked row
+        row.classList.add("selected");
+        // Update the appointment detail card
+        updateAppointmentDetailCard(row.dataset);
+      }
+    });
+
+    function updateAppointmentDetailCard(data) {
+      // Update customer information
+      appointmentDetail.querySelector("h5.mt-4").textContent = data.customerName;
+      appointmentDetail.querySelector("p.text-muted").textContent = data.customerMobile;
+
+      // Update appointment information
+      const tableBody = appointmentDetail.querySelector("tbody");
+      tableBody.innerHTML = `
+            <tr>
+                <td class="fw-medium" scope="row">Technician</td>
+                <td>${data.technicianName}<br>ID: ${data.technicianId}</td>
+            </tr>
+            <tr>
+                <td class="fw-medium" scope="row">Date</td>
+                <td>${data.date}</td>
+            </tr>
+            <tr>
+                <td class="fw-medium" scope="row">Time</td>
+                <td>${data.time}</td>
+            </tr>
+            <tr>
+                <td class="fw-medium" scope="row">Status</td>
+                <td>${data.status}</td>
+            </tr>
+            <tr>
+                <td class="fw-medium" scope="row">Notes</td>
+                <td>${data.notes}</td>
+            </tr>
+            <tr>
+                <td class="fw-medium" scope="row">Services</td>
+                <td>${data.services}</td>
+            </tr>
+            <tr>
+                <td class="fw-medium" scope="row">Materials</td>
+                <td>${data.materials}</td>
+            </tr>
+        `;
     }
+
+    // Initialize the card with the first appointment's data
+    const firstRow = appointmentTable.querySelector("tbody tr");
+    if (firstRow) {
+      updateAppointmentDetailCard(firstRow.dataset);
+    }
+
+    // Add event listeners to filter buttons
+    const filterButtons = document.querySelectorAll("[data-period]");
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", function (e) {
+        e.preventDefault();
+        const period = this.getAttribute("data-period");
+        submitForm(period);
+      });
+    });
+
+    function submitForm(period) {
+      document.getElementById("timePeriodInput").value = period;
+      document.getElementById("customDateInput").value = "";
+      document.getElementById("timePeriodForm").submit();
+    }
+
+    // Initialize flatpickr for custom date range
+    flatpickr("#customDateInput", {
+      mode: "range",
+      dateFormat: "d M, Y",
+      onClose: function (selectedDates, dateStr, instance) {
+        if (selectedDates.length === 2) {
+          document.getElementById("timePeriodInput").value = "";
+          document.getElementById("timePeriodForm").submit();
+        }
+      },
+    });
   });
-
-  function fetchAppointmentDetails(appointmentId) {
-    // Fetch appointment details using AJAX
-    fetch(`/api/appointment/${appointmentId}/`)
-      .then(response => response.json())
-      .then(data => {
-        // Update the appointment detail card with fetched data
-        updateAppointmentDetailCard(data);
-      })
-      .catch(error => console.error('Error fetching appointment details:', error));
-  }
-
-  function updateAppointmentDetailCard(appointmentData) {
-    // Update the content of the appointment detail card
-    // This is a simplified example; adjust according to your actual data structure
-    appointmentDetail.querySelector('h5').textContent = appointmentData.customer_name;
-    appointmentDetail.querySelector('p.text-muted').textContent = appointmentData.customer_mobile;
-    // Update other fields...
-  }
-});
 </script>
 {% endblock %}
